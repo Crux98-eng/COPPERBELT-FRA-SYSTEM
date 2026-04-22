@@ -1,7 +1,43 @@
 import { Link } from "react-router";
-import { ArrowRight, Shield, Users, TrendingUp, MapPin } from "lucide-react";
+import { Shield, MapPin } from "lucide-react";
+
+import registerImage from "@/assets/registration.png";
+import transportImage from "@/assets/transport.png";
+import shedImage from "@/assets/shed.png";
+import fraudImage from "@/assets/froud.png";
 
 export function LandingPage() {
+  const solutionCards = [
+    {
+      title: "Farmer Registration",
+      description:
+        "Secure biometric registration with GPS verification and NRC validation for all registered farmers",
+      image: registerImage,
+      alt: "Farmer registration illustration",
+    },
+    {
+      title: "Transport Tracking",
+      description:
+        "Real-time GPS tracking of produce from collection points to storage sheds with full audit trails",
+      image: transportImage,
+      alt: "Transport tracking illustration",
+    },
+    {
+      title: "Shed Procurement",
+      description:
+        "Automated weighing, variance detection, and instant payment processing for transparent transactions",
+      image: shedImage,
+      alt: "Shed procurement illustration",
+    },
+    {
+      title: "Fraud Prevention",
+      description:
+        "AI-powered detection of irregularities, duplicate registrations, and suspicious transaction patterns",
+      image: fraudImage,
+      alt: "Fraud prevention illustration",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <div
@@ -60,21 +96,7 @@ export function LandingPage() {
               under the Food Reserve Agency.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/register"
-                className="group flex items-center gap-2 px-8 py-4 bg-accent text-accent-foreground rounded-lg hover:bg-accent/90 transition-all shadow-xl hover:shadow-2xl"
-              >
-                <span className="text-lg">Register as Farmer</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/login"
-                className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white rounded-lg hover:bg-white/20 transition-all"
-              >
-                <span className="text-lg">Access Dashboard</span>
-              </Link>
-            </div>
+           
           </div>
         </div>
 
@@ -106,65 +128,28 @@ export function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="group">
-              <div className="bg-card border-2 border-border rounded-xl p-8 hover:border-primary transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-secondary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Users className="w-7 h-7 text-secondary" />
+            {solutionCards.map((card) => (
+              <div
+                key={card.title}
+                className="bg-card border-2 border-border rounded-xl overflow-hidden hover:border-primary transition-all hover:shadow-lg hover:-translate-y-1"
+              >
+                <div className="h-44 bg-muted/40 p-5 flex items-center justify-center">
+                  <img
+                    src={card.image}
+                    alt={card.alt}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
-                <h3 className="text-xl text-card-foreground mb-3">
-                  Farmer Registration
-                </h3>
-                <p className="text-muted-foreground">
-                  Secure biometric registration with GPS verification and NRC
-                  validation for all registered farmers
-                </p>
-              </div>
-            </div>
-
-            <div className="group">
-              <div className="bg-card border-2 border-border rounded-xl p-8 hover:border-primary transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <TruckIcon className="w-7 h-7 text-primary" />
+                <div className="px-5 pb-5 pt-3">
+                  <h3 className="text-sm text-card-foreground mb-2">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {card.description}
+                  </p>
                 </div>
-                <h3 className="text-xl text-card-foreground mb-3">
-                  Transport Tracking
-                </h3>
-                <p className="text-muted-foreground">
-                  Real-time GPS tracking of produce from collection points to
-                  storage sheds with full audit trails
-                </p>
               </div>
-            </div>
-
-            <div className="group">
-              <div className="bg-card border-2 border-border rounded-xl p-8 hover:border-primary transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <ScaleIcon className="w-7 h-7 text-accent" />
-                </div>
-                <h3 className="text-xl text-card-foreground mb-3">
-                  Shed Procurement
-                </h3>
-                <p className="text-muted-foreground">
-                  Automated weighing, variance detection, and instant payment
-                  processing for transparent transactions
-                </p>
-              </div>
-            </div>
-
-            <div className="group">
-              <div className="bg-card border-2 border-border rounded-xl p-8 hover:border-primary transition-all hover:shadow-lg">
-                <div className="w-14 h-14 bg-destructive/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Shield className="w-7 h-7 text-destructive" />
-                </div>
-                <h3 className="text-xl text-card-foreground mb-3">
-                  Fraud Prevention
-                </h3>
-                <p className="text-muted-foreground">
-                  AI-powered detection of irregularities, duplicate
-                  registrations, and suspicious transaction patterns
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -284,45 +269,5 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function TruckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
-      <path d="M15 18H9" />
-      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
-      <circle cx="17" cy="18" r="2" />
-      <circle cx="7" cy="18" r="2" />
-    </svg>
-  );
-}
-
-function ScaleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-      <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z" />
-      <path d="M7 21h10" />
-      <path d="M12 3v18" />
-      <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2" />
-    </svg>
   );
 }

@@ -10,6 +10,7 @@ import {
   Flag,
   Edit,
 } from "lucide-react";
+import FarmMap from "../dashboard/mapPlot";
 
 export function FarmerDetail() {
   const { id } = useParams();
@@ -311,6 +312,7 @@ export function FarmerDetail() {
             <div className="p-4 bg-muted/30 rounded-lg">
               <div className="flex items-start gap-2 mb-2">
                 <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                  <FarmMap />
                 <div>
                   <p className="text-sm text-card-foreground">
                     {farmerData.gpsCoordinates}
@@ -319,6 +321,7 @@ export function FarmerDetail() {
                     Captured: {farmerData.registered}
                   </p>
                 </div>
+              
               </div>
               <div className="mt-4 h-32 bg-muted rounded border border-border flex items-center justify-center">
                 <p className="text-sm text-muted-foreground">Map Preview</p>

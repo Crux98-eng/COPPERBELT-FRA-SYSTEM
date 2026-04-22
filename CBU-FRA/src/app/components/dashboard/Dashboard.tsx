@@ -13,6 +13,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import FarmMap from "./mapPlot";
 
 const farmersByRegion = [
   { region: "Lusaka", farmers: 2340, growth: 12 },
@@ -87,7 +88,7 @@ const recentActivity = [
 export function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-card">
+      <div className="border-b border-border bg-[green]/30">
         <div className="px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
@@ -293,8 +294,8 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-border">
+          <div className="bg-transparent  border-border rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-border bg-[green]/30">
               <h3 className="text-lg text-card-foreground">Recent Activity</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Latest system events

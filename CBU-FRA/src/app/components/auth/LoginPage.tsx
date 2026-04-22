@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { User, Lock, Fingerprint } from "lucide-react";
-
+import backgroundImage from '@/assets/farmbg.jpg'
 export function LoginPage() {
   const [useBiometric, setUseBiometric] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <img src={backgroundImage} alt="Background" className="absolute inset-0 w-full h-full object-cover opacity-100 z-0" />
+      <div className="w-full max-w-md backdrop-blur-sm bg-background/70 rounded-lg shadow-lg p-6 relative z-10">
         <div className="bg-card rounded-lg shadow-lg p-8 border border-border">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
@@ -15,8 +16,9 @@ export function LoginPage() {
             </div>
             <h1 className="text-3xl text-card-foreground mb-2">FRA System</h1>
             <p className="text-muted-foreground">Food Reserve Agency - Zambia</p>
-          </div>
-
+          </div> 
+          
+         
           <div className="mb-6">
             <div className="flex gap-2 p-1 bg-muted rounded-lg mb-6">
               <button
