@@ -28,6 +28,13 @@ export function FarmerDetail() {
     registered: "2026-01-15",
     biometricStatus: "verified",
     gpsCoordinates: "-13.6334° S, 32.6503° E",
+    farmBoundaryCoordinates: [
+      { lat: -13.6334, lng: 32.6503 },
+      { lat: -13.6324, lng: 32.6532 },
+      { lat: -13.6354, lng: 32.6541 },
+      { lat: -13.6372, lng: 32.6512 },
+      { lat: -13.6359, lng: 32.6487 },
+    ],
     transportHistory: [
       {
         id: "TB001",
@@ -101,7 +108,7 @@ export function FarmerDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-card border border-border rounded-lg shadow-sm p-6">
+          <div className="bg-card  border border-border rounded-lg shadow-sm p-6">
             <h2 className="text-xl text-card-foreground mb-4">
               Personal Information
             </h2>
@@ -305,27 +312,17 @@ export function FarmerDetail() {
             </div>
           </div>
 
-          <div className="bg-card border border-border rounded-lg shadow-sm p-6">
+          <div className="bg-card border border-border rounded-lg shadow-sm p-6 ">
             <h2 className="text-lg text-card-foreground mb-4">
               GPS Coordinates
             </h2>
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-start gap-2 mb-2">
-                <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                  <FarmMap />
-                <div>
-                  <p className="text-sm text-card-foreground">
-                    {farmerData.gpsCoordinates}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Captured: {farmerData.registered}
-                  </p>
-                </div>
-              
-              </div>
-              <div className="mt-4 h-32 bg-muted rounded border border-border flex items-center justify-center">
-                <p className="text-sm text-muted-foreground">Map Preview</p>
-              </div>
+            <div className="p-4 bg-muted/30 rounded-lg ">
+              <FarmMap coordinates={farmerData.farmBoundaryCoordinates} />
+             <span className="text-sm text-muted-foreground mt-2 block">
+               Hectorage: 2.5 
+             </span>
+                 
+             
             </div>
           </div>
 
