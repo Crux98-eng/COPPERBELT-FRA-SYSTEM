@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl, { Map, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -91,6 +91,16 @@ export const INITIAL_TRUCKS: Truck[] = [
 ];
 
 // ─────────────────────────────────────────────
+// ROUTE LINE COLORS  (one per route id)
+// ─────────────────────────────────────────────
+const ROUTE_COLORS: Record<number, string> = {
+  1: "#22d3ee",
+  2: "#a78bfa",
+  3: "#fb923c",
+  4: "#34d399",
+};
+
+// ─────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────
 const CITIES = ["All", "Lusaka", "Chipata", "Mongu", "Ndola"];
@@ -156,6 +166,94 @@ const cityForRoute = (routeId: number, side: "from" | "to"): string => {
   return LOCATIONS.find(l => l.id === locId)?.city ?? "";
 };
 
+// ── Route line layer helpers ──────────────────
+
+const routeLayerId       = (truckId: string, kind: "traveled" | "remaining") => `route-${truckId}-${kind}`;
+const routeSourceId      = (truckId: string, kind: "traveled" | "remaining") => `src-route-${truckId}-${kind}`;
+
+const addRouteLayers = (map: Map, truck: Truck) => {
+  const color   = ROUTE_COLORS[truck.routeId] ?? "#ffffff";
+  const start   = getStartpoint(truck.routeId)!;
+  const end     = getEndpoint(truck.routeId)!;
+
+  // traveled segment  (origin → current position)
+  const traveledSrcId  = routeSourceId(truck.id, "traveled");
+  const traveledLayId  = routeLayerId(truck.id, "traveled");
+  if (!map.getSource(traveledSrcId)) {
+    map.addSource(traveledSrcId, {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [start, truck.position] },
+      },
+    });
+    map.addLayer({
+      id: traveledLayId,
+      type: "line",
+      source: traveledSrcId,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": color,
+        "line-width": 2,
+        "line-opacity": 0.25,
+        "line-dasharray": [2, 3],
+      },
+    });
+  }
+
+  // remaining segment  (current position → destination)
+  const remainSrcId = routeSourceId(truck.id, "remaining");
+  const remainLayId = routeLayerId(truck.id, "remaining");
+  if (!map.getSource(remainSrcId)) {
+    map.addSource(remainSrcId, {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [truck.position, end] },
+      },
+    });
+    map.addLayer({
+      id: remainLayId,
+      type: "line",
+      source: remainSrcId,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": color,
+        "line-width": 3,
+        "line-opacity": 0.6,
+      },
+    });
+  }
+};
+
+const updateRouteLines = (map: Map, truck: Truck) => {
+  const start = getStartpoint(truck.routeId)!;
+  const end   = getEndpoint(truck.routeId)!;
+
+  const traveledSrc = map.getSource(routeSourceId(truck.id, "traveled")) as maplibregl.GeoJSONSource | undefined;
+  traveledSrc?.setData({
+    type: "Feature", properties: {},
+    geometry: { type: "LineString", coordinates: [start, truck.position] },
+  });
+
+  const remainSrc = map.getSource(routeSourceId(truck.id, "remaining")) as maplibregl.GeoJSONSource | undefined;
+  remainSrc?.setData({
+    type: "Feature", properties: {},
+    geometry: { type: "LineString", coordinates: [truck.position, end] },
+  });
+};
+
+const highlightRouteLines = (map: Map, truck: Truck, selected: boolean) => {
+  const remainLayId  = routeLayerId(truck.id, "remaining");
+  const traveledLayId = routeLayerId(truck.id, "traveled");
+  if (!map.getLayer(remainLayId)) return;
+  map.setPaintProperty(remainLayId,  "line-opacity", selected ? 1   : 0.6);
+  map.setPaintProperty(remainLayId,  "line-width",   selected ? 5   : 3);
+  map.setPaintProperty(traveledLayId,"line-opacity", selected ? 0.5 : 0.25);
+};
+
 // ─────────────────────────────────────────────
 // COMPONENT
 // ─────────────────────────────────────────────
@@ -212,13 +310,20 @@ export default function LogisticsMap() {
           .addTo(map);
       });
 
+      // Route lines (drawn BEFORE truck markers so lines sit underneath)
+      trucksRef.current.forEach(truck => {
+        addRouteLayers(map, truck);
+      });
+
       // Truck markers
       trucksRef.current.forEach(truck => {
         const el = truckMarkerEl(truck.status);
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat(truck.position)
           .addTo(map);
-        el.addEventListener("click", () => setSelectedTruck(id => id === truck.id ? null : truck.id));
+        el.addEventListener("click", () =>
+          setSelectedTruck(id => id === truck.id ? null : truck.id)
+        );
         truck.marker = marker;
       });
 
@@ -253,6 +358,7 @@ export default function LogisticsMap() {
             truck.eta = `~${Math.max(1, Math.round(hrs / 60))} min`;
           }
           truck.marker?.setLngLat(truck.position);
+          updateRouteLines(map, truck);
           changed = true;
         });
         if (changed) {
@@ -271,10 +377,15 @@ export default function LogisticsMap() {
 
   // Fly to selected truck
   useEffect(() => {
-    if (!selectedTruck || !mapInstance.current) return;
+    if (!mapInstance.current) return;
+    const map = mapInstance.current;
+    // Dim all routes first
+    trucksRef.current.forEach(t => highlightRouteLines(map, t, false));
+    if (!selectedTruck) return;
     const truck = trucksRef.current.find(t => t.id === selectedTruck);
     if (!truck) return;
-    mapInstance.current.flyTo({ center: truck.position, zoom: 8, duration: 800 });
+    highlightRouteLines(map, truck, true);
+    map.flyTo({ center: truck.position, zoom: 8, duration: 800 });
   }, [selectedTruck]);
 
   const selectedTruckData = trucks.find(t => t.id === selectedTruck) ?? null;
@@ -450,10 +561,13 @@ export default function LogisticsMap() {
               </div>
             ))}
             <div style={{ borderTop: "1px solid #1e2a38", marginTop: 6, paddingTop: 6 }}>
-              {(Object.entries(STATUS_META) as [TruckStatus, typeof STATUS_META[TruckStatus]][]).map(([s, m]) => (
-                <div key={s} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: m.dot }} />
-                  <span style={{ fontSize: 10, color: "#4a6080", textTransform: "uppercase", letterSpacing: 1 }}>{m.label}</span>
+              <div style={{ fontSize: 9, color: "#1e2a38", letterSpacing: 2, textTransform: "uppercase", marginBottom: 5 }}>Routes</div>
+              {ROUTES.map(r => (
+                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                  <div style={{ width: 18, height: 3, borderRadius: 2, background: ROUTE_COLORS[r.id] ?? "#fff" }} />
+                  <span style={{ fontSize: 9, color: "#4a6080", textTransform: "uppercase", letterSpacing: 1 }}>
+                    {cityForRoute(r.id, "from")} → {cityForRoute(r.id, "to")}
+                  </span>
                 </div>
               ))}
             </div>

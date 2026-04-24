@@ -10,7 +10,7 @@ import { TransportLogistics } from "./components/transport/TransportLogistics";
 import { ShedProcurement } from "./components/shed/ShedProcurement";
 import { FraudDetection } from "./components/fraud/FraudDetection";
 import  LogisticsMap  from "./components/map/LogisticsMap";
-
+import Settings from "./components/settings/Settings";
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -27,14 +27,13 @@ export const router = createBrowserRouter([
       { path: "shed", Component: ShedProcurement },
       { path: "fraud", Component: FraudDetection },
       { path: "map", Component: LogisticsMap },
+      { path: "settings", Component: Settings },
+      { path: "register",Component: RegistrationPage},
     ],
   },
   {
     path: "/login",
     Component: LoginPage,
   },
-  {
-    path: "/register",
-    Component: RegistrationPage,
-  },
+  
 ]);

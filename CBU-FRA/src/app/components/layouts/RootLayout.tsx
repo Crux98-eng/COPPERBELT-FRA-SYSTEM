@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Map,
   LogOut,
+  Settings,
 } from "lucide-react";
 
 export function RootLayout() {
@@ -25,6 +26,7 @@ export function RootLayout() {
     { path: "/dashboard/shed", label: "Shed Procurement", icon: Warehouse },
     { path: "/dashboard/fraud", label: "Fraud Detection", icon: AlertTriangle },
     { path: "/dashboard/map", label: "Logistics Map", icon: Map },
+    { path: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 
   return (

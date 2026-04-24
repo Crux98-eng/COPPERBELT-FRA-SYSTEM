@@ -102,14 +102,14 @@ export function LoginPage() {
             )}
           </div>
 
-          <div className="text-center">
+          {/* <div className="text-center">
             <Link
               to="/register"
               className="text-sm text-primary hover:underline"
             >
               Register New Farmer
             </Link>
-          </div>
+          </div> */}
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
