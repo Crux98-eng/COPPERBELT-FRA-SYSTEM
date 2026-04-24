@@ -9,7 +9,7 @@ import { FarmerDetail } from "./components/farmers/FarmerDetail";
 import { TransportLogistics } from "./components/transport/TransportLogistics";
 import { ShedProcurement } from "./components/shed/ShedProcurement";
 import { FraudDetection } from "./components/fraud/FraudDetection";
-import { LogisticsMap } from "./components/map/LogisticsMap";
+import  LogisticsMap  from "./components/map/LogisticsMap";
 
 export const router = createBrowserRouter([
   {
