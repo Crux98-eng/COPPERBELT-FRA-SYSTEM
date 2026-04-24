@@ -1,692 +1,465 @@
-// import { useEffect, useRef, useState } from "react";
-// import maplibregl from "maplibre-gl";
-// import "maplibre-gl/dist/maplibre-gl.css";
-
-// type LocationType = "collection" | "shed";
-// type LngLat = [number, number];
-
-// interface Location {
-//   name: string;
-//   type: LocationType;
-//   coordinates: { lat: number; lng: number };
-// }
-
-// interface Route {
-//   id: number;
-//   from: string;
-//   to: string;
-// }
-
-// interface Region {
-//   id: string;
-//   name: string;
-//   polygon: LngLat[];
-// }
-
-// interface TruckState {
-//   id: string;
-//   routeId: number;
-//   progress: number;
-// }
-
-// interface TruckMarkerState extends TruckState {
-//   marker: maplibregl.Marker;
-//   alerted: boolean;
-// }
-
-// const locations: Location[] = [
-//   {
-//     name: "Lusaka Collection Center",
-//     type: "collection",
-//     coordinates: { lat: -15.4167, lng: 28.2833 },
-//   },
-//   {
-//     name: "Chipata Collection Center",
-//     type: "collection",
-//     coordinates: { lat: -13.6334, lng: 32.6503 },
-//   },
-//   {
-//     name: "Mongu Collection Center",
-//     type: "collection",
-//     coordinates: { lat: -15.2694, lng: 23.1459 },
-//   },
-//   {
-//     name: "Lusaka North Shed",
-//     type: "shed",
-//     coordinates: { lat: -15.3875, lng: 28.3228 },
-//   },
-//   {
-//     name: "Chipata Central Shed",
-//     type: "shed",
-//     coordinates: { lat: -13.6543, lng: 32.6234 },
-//   },
-// ];
-
-// const routes: Route[] = [
-//   {
-//     id: 1,
-//     from: "Lusaka Collection Center",
-//     to: "Lusaka North Shed",
-//   },
-//   {
-//     id: 2,
-//     from: "Chipata Collection Center",
-//     to: "Chipata Central Shed",
-//   },
-//   {
-//     id: 3,
-//     from: "Mongu Collection Center",
-//     to: "Lusaka North Shed",
-//   },
-// ];
-
-// const regions: Region[] = [
-//   {
-//     id: "REGION_LSK",
-//     name: "Lusaka Region",
-//     polygon: [
-//       [28.0, -15.6],
-//       [28.6, -15.6],
-//       [28.6, -15.2],
-//       [28.0, -15.2],
-//       [28.0, -15.6],
-//     ],
-//   },
-// ];
-
-// const interpolate = (start: LngLat, end: LngLat, t: number): LngLat => [
-//   start[0] + (end[0] - start[0]) * t,
-//   start[1] + (end[1] - start[1]) * t,
-// ];
-
-// const isPointInPolygon = (point: LngLat, polygon: LngLat[]) => {
-//   const [x, y] = point;
-//   let inside = false;
-
-//   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-//     const [xi, yi] = polygon[i];
-//     const [xj, yj] = polygon[j];
-//     const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-//     if (intersects) inside = !inside;
-//   }
-
-//   return inside;
-// };
-
-// export function LogisticsMap() {
-//   const mapRef = useRef<HTMLDivElement | null>(null);
-//   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
-//   const intervalRef = useRef<number | null>(null);
-//   const selectedShedRef = useRef("all");
-
-//   const [selectedShed, setSelectedShed] = useState("all");
-
-//   const trucksRef = useRef<TruckState[]>([
-//     { id: "T1", routeId: 1, progress: 0 },
-//     { id: "T2", routeId: 2, progress: 0.3 },
-//     { id: "T3", routeId: 3, progress: 0.6 },
-//   ]);
-
-//   useEffect(() => {
-//     selectedShedRef.current = selectedShed;
-//   }, [selectedShed]);
-
-//   useEffect(() => {
-//     if (!mapRef.current || mapInstanceRef.current) return;
-
-//     const map = new maplibregl.Map({
-//       container: mapRef.current,
-//       style: "https://demotiles.maplibre.org/style.json",
-//       center: [28.2833, -15.4167],
-//       zoom: 5,
-//     });
-
-//     mapInstanceRef.current = map;
-
-//     map.on("load", () => {
-//       locations.forEach((location) => {
-//         new maplibregl.Marker({
-//           color: location.type === "collection" ? "green" : "orange",
-//         })
-//           .setLngLat([location.coordinates.lng, location.coordinates.lat])
-//           .setPopup(new maplibregl.Popup().setText(location.name))
-//           .addTo(map);
-//       });
-
-//       routes.forEach((route) => {
-//         const from = locations.find((location) => location.name === route.from);
-//         const to = locations.find((location) => location.name === route.to);
-//         if (!from || !to) return;
-
-//         map.addSource(`route-${route.id}`, {
-//           type: "geojson",
-//           data: {
-//             type: "Feature",
-//             geometry: {
-//               type: "LineString",
-//               coordinates: [
-//                 [from.coordinates.lng, from.coordinates.lat],
-//                 [to.coordinates.lng, to.coordinates.lat],
-//               ],
-//             },
-//             properties: {},
-//           },
-//         });
-
-//         map.addLayer({
-//           id: `route-${route.id}`,
-//           type: "line",
-//           source: `route-${route.id}`,
-//           paint: {
-//             "line-color": "#1B5E20",
-//             "line-width": 3,
-//             "line-dasharray": [2, 2],
-//           },
-//         });
-//       });
-
-//       regions.forEach((region) => {
-//         map.addSource(region.id, {
-//           type: "geojson",
-//           data: {
-//             type: "Feature",
-//             geometry: {
-//               type: "Polygon",
-//               coordinates: [region.polygon],
-//             },
-//             properties: {},
-//           },
-//         });
-
-//         map.addLayer({
-//           id: region.id,
-//           type: "fill",
-//           source: region.id,
-//           paint: {
-//             "fill-color": "#4CAF50",
-//             "fill-opacity": 0.2,
-//           },
-//         });
-//       });
-
-//       const truckMarkers: TruckMarkerState[] = trucksRef.current.map((truck) => ({
-//         ...truck,
-//         marker: new maplibregl.Marker({ color: "blue" }).addTo(map),
-//         alerted: false,
-//       }));
-
-//       intervalRef.current = window.setInterval(() => {
-//         truckMarkers.forEach((truck) => {
-//           const route = routes.find((item) => item.id === truck.routeId);
-//           if (!route) return;
-
-//           const from = locations.find((location) => location.name === route.from);
-//           const to = locations.find((location) => location.name === route.to);
-//           if (!from || !to) return;
-
-//           if (selectedShedRef.current !== "all" && route.to !== selectedShedRef.current) {
-//             truck.marker.getElement().style.display = "none";
-//             return;
-//           }
-
-//           truck.marker.getElement().style.display = "block";
-//           truck.progress += 0.002;
-//           if (truck.progress > 1) truck.progress = 1;
-
-//           const [lng, lat] = interpolate(
-//             [from.coordinates.lng, from.coordinates.lat],
-//             [to.coordinates.lng, to.coordinates.lat],
-//             truck.progress
-//           );
-
-//           truck.marker.setLngLat([lng, lat]);
-
-//           if (truck.progress >= 1 && !truck.alerted) {
-//             window.alert(`${truck.id} has arrived at ${route.to}`);
-//             truck.alerted = true;
-//           }
-
-//           regions.forEach((region) => {
-//             if (isPointInPolygon([lng, lat], region.polygon)) {
-//               console.log(`${truck.id} is inside ${region.name}`);
-//             }
-//           });
-//         });
-//       }, 100);
-//     });
-
-//     return () => {
-//       if (intervalRef.current !== null) {
-//         window.clearInterval(intervalRef.current);
-//         intervalRef.current = null;
-//       }
-
-//       map.remove();
-//       mapInstanceRef.current = null;
-//     };
-//   }, []);
-
-//   return (
-//     <div className="p-4">
-//       <div className="mb-4">
-//         <select
-//           value={selectedShed}
-//           onChange={(event) => setSelectedShed(event.target.value)}
-//           className="border px-3 py-2 rounded"
-//         >
-//           <option value="all">All Destinations</option>
-//           <option value="Lusaka North Shed">Lusaka Shed</option>
-//           <option value="Chipata Central Shed">Chipata Shed</option>
-//         </select>
-//       </div>
-
-//       <div ref={mapRef} className="h-[600px] w-full rounded-lg" />
-//     </div>
-//   );
-// }
-
-// export default LogisticsMap;
-// import { useEffect, useRef, useState } from "react";
-// import maplibregl, { Map, Marker, LngLatBounds } from "maplibre-gl";
-// import "maplibre-gl/dist/maplibre-gl.css";
-
-// type LocationType = "collection" | "shed";
-// type LngLat = [number, number];
-
-// interface Location {
-//   name: string;
-//   type: LocationType;
-//   coordinates: { lat: number; lng: number };
-// }
-
-// interface Route {
-//   id: number;
-//   from: string;
-//   to: string;
-// }
-
-// interface Truck {
-//   id: string;
-//   routeId: number;
-//   progress: number;
-//   marker?: Marker;
-//   alerted?: boolean;
-// }
-
-// // ================= DATA =================
-// const locations: Location[] = [
-//   { name: "Lusaka Collection Center", type: "collection", coordinates: { lat: -15.4167, lng: 28.2833 } },
-//   { name: "Chipata Collection Center", type: "collection", coordinates: { lat: -13.6334, lng: 32.6503 } },
-//   { name: "Mongu Collection Center", type: "collection", coordinates: { lat: -15.2694, lng: 23.1459 } },
-//   { name: "Lusaka North Shed", type: "shed", coordinates: { lat: -15.3875, lng: 28.3228 } },
-//   { name: "Chipata Central Shed", type: "shed", coordinates: { lat: -13.6543, lng: 32.6234 } },
-// ];
-
-// const routes: Route[] = [
-//   { id: 1, from: "Lusaka Collection Center", to: "Lusaka North Shed" },
-//   { id: 2, from: "Chipata Collection Center", to: "Chipata Central Shed" },
-//   { id: 3, from: "Mongu Collection Center", to: "Lusaka North Shed" },
-// ];
-
-// // ================= HELPERS =================
-// const createCurvedLine = (from: LngLat, to: LngLat): LngLat[] => {
-//   const midLng = (from[0] + to[0]) / 2;
-//   const midLat = (from[1] + to[1]) / 2 + 1;
-//   return [from, [midLng, midLat], to];
-// };
-
-// const interpolate = (start: LngLat, end: LngLat, t: number): LngLat => [
-//   start[0] + (end[0] - start[0]) * t,
-//   start[1] + (end[1] - start[1]) * t,
-// ];
-
-// // ================= COMPONENT =================
-// export default function LogisticsMap() {
-//   const mapRef = useRef<HTMLDivElement | null>(null);
-//   const mapInstance = useRef<Map | null>(null);
-//   const intervalRef = useRef<number | null>(null);
-
-//   const [selectedShed, setSelectedShed] = useState<string>("all");
-
-//   const trucksRef = useRef<Truck[]>([
-//     { id: "T1", routeId: 1, progress: 0 },
-//     { id: "T2", routeId: 2, progress: 0.3 },
-//     { id: "T3", routeId: 3, progress: 0.6 },
-//   ]);
-
-//   // ================= INIT MAP =================
-//   useEffect(() => {
-//     if (!mapRef.current || mapInstance.current) return;
-
-//     const map = new maplibregl.Map({
-//       container: mapRef.current,
-//       style: "https://demotiles.maplibre.org/style.json",
-//       center: [28.2833, -15.4167],
-//       zoom: 5,
-//     });
-
-//     mapInstance.current = map;
-
-//     // controls
-//     map.addControl(new maplibregl.NavigationControl(), "top-right");
-//     map.scrollZoom.enable();
-//     map.dragPan.enable();
-//     map.touchZoomRotate.enable();
-
-//     map.on("load", () => {
-//       // markers
-//       locations.forEach((loc) => {
-//         new maplibregl.Marker({
-//           color: loc.type === "collection" ? "green" : "orange",
-//         })
-//           .setLngLat([loc.coordinates.lng, loc.coordinates.lat])
-//           .setPopup(new maplibregl.Popup().setText(loc.name))
-//           .addTo(map);
-//       });
-
-//       // routes
-//       routes.forEach((route) => {
-//         const from = locations.find((l) => l.name === route.from);
-//         const to = locations.find((l) => l.name === route.to);
-//         if (!from || !to) return;
-
-//         const coords = createCurvedLine(
-//           [from.coordinates.lng, from.coordinates.lat],
-//           [to.coordinates.lng, to.coordinates.lat]
-//         );
-
-//         map.addSource(`route-${route.id}`, {
-//           type: "geojson",
-//           data: {
-//             type: "Feature",
-//             geometry: { type: "LineString", coordinates: coords },
-//             properties: {},
-//           },
-//         });
-
-//         map.addLayer({
-//           id: `route-${route.id}`,
-//           type: "line",
-//           source: `route-${route.id}`,
-//           paint: {
-//             "line-color": "#1B5E20",
-//             "line-width": 3,
-//             "line-dasharray": [2, 2],
-//           },
-//         });
-//       });
-
-//       // trucks
-//       trucksRef.current.forEach((truck) => {
-//         truck.marker = new maplibregl.Marker({ color: "blue" }).addTo(map);
-//         truck.alerted = false;
-//       });
-
-//       // animation
-//       intervalRef.current = window.setInterval(() => {
-//         trucksRef.current.forEach((truck) => {
-//           const route = routes.find((r) => r.id === truck.routeId);
-//           if (!route) return;
-
-//           const from = locations.find((l) => l.name === route.from);
-//           const to = locations.find((l) => l.name === route.to);
-//           if (!from || !to || !truck.marker) return;
-
-//           if (selectedShed !== "all" && route.to !== selectedShed) {
-//             truck.marker.getElement().style.display = "none";
-//             return;
-//           }
-
-//           truck.marker.getElement().style.display = "block";
-
-//           truck.progress += 0.002;
-//           if (truck.progress > 1) truck.progress = 1;
-
-//           const [lng, lat] = interpolate(
-//             [from.coordinates.lng, from.coordinates.lat],
-//             [to.coordinates.lng, to.coordinates.lat],
-//             truck.progress
-//           );
-
-//           truck.marker.setLngLat([lng, lat]);
-
-//           if (truck.progress >= 1 && !truck.alerted) {
-//             alert(`${truck.id} reached ${route.to}`);
-//             truck.alerted = true;
-//           }
-//         });
-//       }, 100);
-
-//       // fit bounds
-//       const bounds = new LngLatBounds();
-//       locations.forEach((loc) =>
-//         bounds.extend([loc.coordinates.lng, loc.coordinates.lat])
-//       );
-//       map.fitBounds(bounds, { padding: 50 });
-//     });
-
-//     return () => {
-//       if (intervalRef.current) clearInterval(intervalRef.current);
-//       map.remove();
-//       mapInstance.current = null;
-//     };
-//   }, []);
-
-//   // ================= FILTER ZOOM =================
-//   useEffect(() => {
-//     const map = mapInstance.current;
-//     if (!map) return;
-
-//     const bounds = new LngLatBounds();
-
-//     routes.forEach((route) => {
-//       if (selectedShed !== "all" && route.to !== selectedShed) return;
-
-//       const from = locations.find((l) => l.name === route.from);
-//       const to = locations.find((l) => l.name === route.to);
-
-//       if (!from || !to) return;
-
-//       bounds.extend([from.coordinates.lng, from.coordinates.lat]);
-//       bounds.extend([to.coordinates.lng, to.coordinates.lat]);
-//     });
-
-//     if (!bounds.isEmpty()) {
-//       map.fitBounds(bounds, { padding: 80, duration: 800 });
-//     }
-//   }, [selectedShed]);
-
-//   return (
-//     <div className="p-4">
-//       <div className="mb-4">
-//         <select
-//           value={selectedShed}
-//           onChange={(e) => setSelectedShed(e.target.value)}
-//           className="border px-3 py-2 rounded"
-//         >
-//           <option value="all">All Destinations</option>
-//           <option value="Lusaka North Shed">Lusaka Shed</option>
-//           <option value="Chipata Central Shed">Chipata Shed</option>
-//         </select>
-//       </div>
-
-//       <div ref={mapRef} className="h-[600px] w-full rounded-lg" />
-//     </div>
-//   );
-// }
-
-import { useEffect, useRef, useState } from "react";
-import maplibregl, { Map, Marker, LngLatBounds } from "maplibre-gl";
+import { useEffect, useRef, useState, useCallback } from "react";
+import maplibregl, { Map, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+// ─────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────
 type LngLat = [number, number];
+type TruckStatus = "in_transit" | "at_shed" | "loading" | "delayed";
+type LocationType = "collection" | "shed";
 
 interface Location {
+  id: string;
   name: string;
-  type: "collection" | "shed";
+  city: string;
+  type: LocationType;
   coordinates: { lat: number; lng: number };
 }
 
 interface Route {
   id: number;
-  from: string;
-  to: string;
+  fromId: string;
+  toId: string;
 }
 
 interface Truck {
   id: string;
+  label: string;
   routeId: number;
   position: LngLat;
-  speed: number; // km/h
-  status: "moving" | "arrived";
+  speed: number;
+  status: TruckStatus;
+  cargo: string;
+  driver: string;
+  eta: string; // human-readable, updated dynamically
   marker?: Marker;
+  arrived: boolean;
+  progressPct: number; // 0–100
+  startPosition: LngLat;
 }
 
-// ================= DATA =================
-const locations: Location[] = [
-  { name: "Lusaka Collection Center", type: "collection", coordinates: { lat: -15.4167, lng: 28.2833 } },
-  { name: "Chipata Collection Center", type: "collection", coordinates: { lat: -13.6334, lng: 32.6503 } },
-  { name: "Mongu Collection Center", type: "collection", coordinates: { lat: -15.2694, lng: 23.1459 } },
-  { name: "Lusaka North Shed", type: "shed", coordinates: { lat: -15.3875, lng: 28.3228 } },
-  { name: "Chipata Central Shed", type: "shed", coordinates: { lat: -13.6543, lng: 32.6234 } },
+// ─────────────────────────────────────────────
+// MOCK DATA  (swap for API later)
+// ─────────────────────────────────────────────
+export const LOCATIONS: Location[] = [
+  { id: "lusaka_cc",    name: "Lusaka Collection Center",  city: "Lusaka",  type: "collection", coordinates: { lat: -15.4167, lng: 28.2833 } },
+  { id: "lusaka_shed",  name: "Lusaka North Shed",         city: "Lusaka",  type: "shed",       coordinates: { lat: -15.3875, lng: 28.3228 } },
+  { id: "chipata_cc",   name: "Chipata Collection Center", city: "Chipata", type: "collection", coordinates: { lat: -13.6334, lng: 32.6503 } },
+  { id: "chipata_shed", name: "Chipata Central Shed",      city: "Chipata", type: "shed",       coordinates: { lat: -13.6543, lng: 32.6234 } },
+  { id: "mongu_cc",     name: "Mongu Collection Center",   city: "Mongu",   type: "collection", coordinates: { lat: -15.2694, lng: 23.1459 } },
+  { id: "ndola_cc",     name: "Ndola Collection Center",   city: "Ndola",   type: "collection", coordinates: { lat: -12.9700, lng: 28.6360 } },
+  { id: "ndola_shed",   name: "Ndola East Shed",           city: "Ndola",   type: "shed",       coordinates: { lat: -12.9500, lng: 28.6600 } },
 ];
 
-const routes: Route[] = [
-  { id: 1, from: "Lusaka Collection Center", to: "Lusaka North Shed" },
-  { id: 2, from: "Chipata Collection Center", to: "Chipata Central Shed" },
-  { id: 3, from: "Mongu Collection Center", to: "Lusaka North Shed" },
+export const ROUTES: Route[] = [
+  { id: 1, fromId: "lusaka_cc",  toId: "lusaka_shed"  },
+  { id: 2, fromId: "chipata_cc", toId: "chipata_shed" },
+  { id: 3, fromId: "mongu_cc",   toId: "lusaka_shed"  },
+  { id: 4, fromId: "ndola_cc",   toId: "ndola_shed"   },
 ];
 
-// ================= HELPERS =================
-const getRoutePoints = (route: Route): [LngLat, LngLat] | null => {
-  const from = locations.find(l => l.name === route.from);
-  const to = locations.find(l => l.name === route.to);
-  if (!from || !to) return null;
-
-  return [
-    [from.coordinates.lng, from.coordinates.lat],
-    [to.coordinates.lng, to.coordinates.lat],
+const mkTruck = (
+  id: string, label: string, routeId: number,
+  status: TruckStatus, driver: string, cargo: string,
+  progressPct: number, speed: number
+): Truck => {
+  const route = ROUTES.find(r => r.id === routeId)!;
+  const from = LOCATIONS.find(l => l.id === route.fromId)!;
+  const to   = LOCATIONS.find(l => l.id === route.toId)!;
+  const start: LngLat = [from.coordinates.lng, from.coordinates.lat];
+  const end: LngLat   = [to.coordinates.lng,   to.coordinates.lat];
+  const frac = progressPct / 100;
+  const pos: LngLat = [
+    start[0] + (end[0] - start[0]) * frac,
+    start[1] + (end[1] - start[1]) * frac,
   ];
+  return { id, label, routeId, position: pos, speed, status, cargo, driver,
+           eta: "—", marker: undefined, arrived: status === "at_shed",
+           progressPct, startPosition: start };
 };
 
-const moveTowards = (current: LngLat, target: LngLat, speed: number): LngLat => {
-  const dx = target[0] - current[0];
-  const dy = target[1] - current[1];
+export const INITIAL_TRUCKS: Truck[] = [
+  mkTruck("T1","ZMB-001", 1, "in_transit", "Chanda Mwamba",  "Copper Ore",   35, 60),
+  mkTruck("T2","ZMB-002", 1, "loading",    "Bwalya Kunda",   "Maize",         0, 55),
+  mkTruck("T3","ZMB-003", 2, "in_transit", "Mutale Phiri",   "Fertiliser",   62, 50),
+  mkTruck("T4","ZMB-004", 2, "at_shed",    "Kalunga Banda",  "Copper Ore",  100, 65),
+  mkTruck("T5","ZMB-005", 3, "in_transit", "Mwape Zulu",     "Charcoal",     18, 45),
+  mkTruck("T6","ZMB-006", 3, "delayed",    "Tembo Lungu",    "Cotton",       40, 30),
+  mkTruck("T7","ZMB-007", 4, "in_transit", "Kapaso Mulenga", "Electronics",  75, 70),
+  mkTruck("T8","ZMB-008", 4, "at_shed",    "Sichone Daka",   "Maize",       100, 60),
+];
 
-  const distance = Math.sqrt(dx * dx + dy * dy);
-  if (distance < 0.0001) return target;
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+const CITIES = ["All", "Lusaka", "Chipata", "Mongu", "Ndola"];
 
-  const step = speed * 0.00001; // simulation scaling
-
-  return [
-    current[0] + (dx / distance) * step,
-    current[1] + (dy / distance) * step,
-  ];
+const STATUS_META: Record<TruckStatus, { label: string; color: string; dot: string }> = {
+  in_transit: { label: "In Transit", color: "#22d3ee",  dot: "#22d3ee" },
+  at_shed:    { label: "At Shed",    color: "#4ade80",  dot: "#4ade80" },
+  loading:    { label: "Loading",    color: "#facc15",  dot: "#facc15" },
+  delayed:    { label: "Delayed",    color: "#f87171",  dot: "#f87171" },
 };
 
-// ================= COMPONENT =================
+const truckMarkerEl = (status: TruckStatus): HTMLElement => {
+  const el = document.createElement("div");
+  const c = STATUS_META[status].dot;
+  el.style.cssText = `
+    width:28px; height:28px; border-radius:50%;
+    background:${c}22; border:2.5px solid ${c};
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; cursor:pointer; transition:transform .2s;
+    box-shadow: 0 0 10px ${c}88;
+  `;
+  el.textContent = "🚛";
+  return el;
+};
+
+const locationMarkerEl = (type: LocationType): HTMLElement => {
+  const el = document.createElement("div");
+  const isCollection = type === "collection";
+  el.style.cssText = `
+    width:16px; height:16px; border-radius:${isCollection ? "50%" : "3px"};
+    background:${isCollection ? "#4ade80" : "#f97316"};
+    border: 2.5px solid #fff3; box-shadow: 0 0 8px #0008;
+  `;
+  return el;
+};
+
+const lerpLngLat = (a: LngLat, b: LngLat, t: number): LngLat =>
+  [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+
+const dist = (a: LngLat, b: LngLat) =>
+  Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2);
+
+const getEndpoint = (routeId: number): LngLat | null => {
+  const route = ROUTES.find(r => r.id === routeId);
+  if (!route) return null;
+  const to = LOCATIONS.find(l => l.id === route.toId);
+  if (!to) return null;
+  return [to.coordinates.lng, to.coordinates.lat];
+};
+
+const getStartpoint = (routeId: number): LngLat | null => {
+  const route = ROUTES.find(r => r.id === routeId);
+  if (!route) return null;
+  const from = LOCATIONS.find(l => l.id === route.fromId);
+  if (!from) return null;
+  return [from.coordinates.lng, from.coordinates.lat];
+};
+
+const cityForRoute = (routeId: number, side: "from" | "to"): string => {
+  const route = ROUTES.find(r => r.id === routeId);
+  if (!route) return "";
+  const locId = side === "from" ? route.fromId : route.toId;
+  return LOCATIONS.find(l => l.id === locId)?.city ?? "";
+};
+
+// ─────────────────────────────────────────────
+// COMPONENT
+// ─────────────────────────────────────────────
 export default function LogisticsMap() {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstance = useRef<Map | null>(null);
   const intervalRef = useRef<number | null>(null);
+  const trucksRef = useRef<Truck[]>(INITIAL_TRUCKS.map(t => ({ ...t })));
+  const [trucks, setTrucks] = useState<Truck[]>(INITIAL_TRUCKS.map(t => ({ ...t })));
+  const [selectedCity, setSelectedCity] = useState("All");
+  const [selectedTruck, setSelectedTruck] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
 
-  const [selectedShed, setSelectedShed] = useState("all");
+  // Filtered trucks for sidebar
+  const filteredTrucks = trucks.filter(t => {
+    if (selectedCity === "All") return true;
+    return (
+      cityForRoute(t.routeId, "from") === selectedCity ||
+      cityForRoute(t.routeId, "to")   === selectedCity
+    );
+  });
 
-  // 🔥 REALISTIC TRUCK STATE
-  const trucksRef = useRef<Truck[]>([
-    {
-      id: "T1",
-      routeId: 1,
-      position: [28.2833, -15.4167],
-      speed: 60,
-      status: "moving",
-    },
-    {
-      id: "T2",
-      routeId: 2,
-      position: [32.6503, -13.6334],
-      speed: 50,
-      status: "moving",
-    },
-  ]);
+  const counts = {
+    in_transit: trucks.filter(t => t.status === "in_transit").length,
+    at_shed:    trucks.filter(t => t.status === "at_shed").length,
+    loading:    trucks.filter(t => t.status === "loading").length,
+    delayed:    trucks.filter(t => t.status === "delayed").length,
+  };
 
+  // ── Map init ──────────────────────────────
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
 
     const map = new maplibregl.Map({
       container: mapRef.current,
       style: "https://demotiles.maplibre.org/style.json",
-      center: [28, -15],
-      zoom: 5,
+      center: [28.5, -14.5],
+      zoom: 5.2,
     });
-
     mapInstance.current = map;
-    map.addControl(new maplibregl.NavigationControl());
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
 
     map.on("load", () => {
-      // markers
-      locations.forEach((loc) => {
-        new maplibregl.Marker({
-          color: loc.type === "collection" ? "green" : "orange",
-        })
+      // Location markers
+      LOCATIONS.forEach(loc => {
+        const el = locationMarkerEl(loc.type);
+        const popup = new maplibregl.Popup({ offset: 12, closeButton: false })
+          .setHTML(`<div style="font-family:monospace;font-size:11px;color:#111">
+            <strong>${loc.name}</strong><br/>${loc.city} · ${loc.type}
+          </div>`);
+        new maplibregl.Marker({ element: el })
           .setLngLat([loc.coordinates.lng, loc.coordinates.lat])
+          .setPopup(popup)
           .addTo(map);
       });
 
-      // trucks
-      trucksRef.current.forEach((truck) => {
-        truck.marker = new maplibregl.Marker({ color: "blue" }).addTo(map);
+      // Truck markers
+      trucksRef.current.forEach(truck => {
+        const el = truckMarkerEl(truck.status);
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat(truck.position)
+          .addTo(map);
+        el.addEventListener("click", () => setSelectedTruck(id => id === truck.id ? null : truck.id));
+        truck.marker = marker;
       });
 
-      // 🔁 SIMULATION LOOP (like backend stream)
+      // Simulation loop
       intervalRef.current = window.setInterval(() => {
-        trucksRef.current.forEach((truck) => {
-          if (truck.status === "arrived") return;
+        let changed = false;
+        trucksRef.current.forEach(truck => {
+          if (truck.status !== "in_transit") return;
+          const target = getEndpoint(truck.routeId);
+          const start  = getStartpoint(truck.routeId);
+          if (!target || !start) return;
 
-          const route = routes.find(r => r.id === truck.routeId);
-          if (!route) return;
-
-          const points = getRoutePoints(route);
-          if (!points) return;
-
-          const [_, target] = points;
-
-          // 🚛 move using GPS logic
-          truck.position = moveTowards(truck.position, target, truck.speed);
-
-          truck.marker?.setLngLat(truck.position);
-
-          // 🚨 arrival detection
-          const dx = truck.position[0] - target[0];
-          const dy = truck.position[1] - target[1];
-
-          if (Math.sqrt(dx * dx + dy * dy) < 0.001) {
-            truck.status = "arrived";
-            console.log(`${truck.id} arrived at ${route.to}`);
+          const step = truck.speed * 0.000012;
+          const d = dist(truck.position, target);
+          if (d < 0.002) {
+            truck.position = target;
+            truck.status = "at_shed";
+            truck.arrived = true;
+            truck.progressPct = 100;
+          } else {
+            const dx = target[0] - truck.position[0];
+            const dy = target[1] - truck.position[1];
+            truck.position = [
+              truck.position[0] + (dx / d) * step,
+              truck.position[1] + (dy / d) * step,
+            ];
+            const totalDist = dist(start, target);
+            const traveled  = dist(start, truck.position);
+            truck.progressPct = Math.min(100, Math.round((traveled / totalDist) * 100));
+            const remaining = dist(truck.position, target);
+            const hrs = (remaining / (truck.speed * 0.000012 * 10 * 3600)) * 3600;
+            truck.eta = `~${Math.max(1, Math.round(hrs / 60))} min`;
           }
+          truck.marker?.setLngLat(truck.position);
+          changed = true;
         });
+        if (changed) {
+          setTrucks(trucksRef.current.map(t => ({ ...t })));
+          setTick(n => n + 1);
+        }
       }, 100);
     });
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       map.remove();
+      mapInstance.current = null;
     };
   }, []);
 
-  return (
-    <div className="p-4">
-      <select
-        value={selectedShed}
-        onChange={(e) => setSelectedShed(e.target.value)}
-        className="mb-4 border px-3 py-2 rounded"
-      >
-        <option value="all">All</option>
-        <option value="Lusaka North Shed">Lusaka</option>
-        <option value="Chipata Central Shed">Chipata</option>
-      </select>
+  // Fly to selected truck
+  useEffect(() => {
+    if (!selectedTruck || !mapInstance.current) return;
+    const truck = trucksRef.current.find(t => t.id === selectedTruck);
+    if (!truck) return;
+    mapInstance.current.flyTo({ center: truck.position, zoom: 8, duration: 800 });
+  }, [selectedTruck]);
 
-      <div ref={mapRef} className="h-[600px] w-full rounded-lg" />
+  const selectedTruckData = trucks.find(t => t.id === selectedTruck) ?? null;
+
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", height: "100vh",
+      background: "#0d1117", color: "#e2e8f0",
+      fontFamily: "'DM Mono', 'Fira Mono', 'Courier New', monospace",
+    }}>
+
+      {/* ── HEADER ─────────────────────────── */}
+      <header style={{
+        padding: "14px 24px", borderBottom: "1px solid #1e2a38",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "#0d1117",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 22 }}>🚛</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: 2, color: "#f0f6ff", textTransform: "uppercase" }}>
+              ZambiaFreight
+            </div>
+            <div style={{ fontSize: 10, color: "#4a6080", letterSpacing: 3, textTransform: "uppercase" }}>
+              Fleet Operations · Live View
+            </div>
+          </div>
+        </div>
+
+        {/* City filter */}
+        <div style={{ display: "flex", gap: 6 }}>
+          {CITIES.map(city => (
+            <button key={city} onClick={() => setSelectedCity(city)} style={{
+              padding: "5px 13px", borderRadius: 4,
+              border: selectedCity === city ? "1px solid #22d3ee" : "1px solid #1e2a38",
+              background: selectedCity === city ? "#22d3ee18" : "transparent",
+              color: selectedCity === city ? "#22d3ee" : "#4a6080",
+              cursor: "pointer", fontSize: 11, letterSpacing: 1,
+              textTransform: "uppercase", transition: "all .15s",
+            }}>
+              {city}
+            </button>
+          ))}
+        </div>
+
+        {/* Status pills */}
+        <div style={{ display: "flex", gap: 12 }}>
+          {(Object.entries(counts) as [TruckStatus, number][]).map(([s, n]) => (
+            <div key={s} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: STATUS_META[s].dot }} />
+              <span style={{ fontSize: 10, color: "#4a6080", textTransform: "uppercase", letterSpacing: 1 }}>
+                {STATUS_META[s].label}
+              </span>
+              <span style={{ fontSize: 12, color: STATUS_META[s].dot, fontWeight: 700 }}>{n}</span>
+            </div>
+          ))}
+        </div>
+      </header>
+
+      {/* ── BODY ───────────────────────────── */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+
+        {/* SIDEBAR */}
+        <aside style={{
+          width: 280, borderRight: "1px solid #1e2a38",
+          overflowY: "auto", padding: "12px 0",
+          background: "#0a0f16",
+        }}>
+          <div style={{ padding: "0 16px 8px", fontSize: 9, color: "#2e4058", letterSpacing: 3, textTransform: "uppercase" }}>
+            {filteredTrucks.length} trucks · {selectedCity}
+          </div>
+
+          {filteredTrucks.map(truck => {
+            const meta = STATUS_META[truck.status];
+            const isSelected = selectedTruck === truck.id;
+            return (
+              <div key={truck.id} onClick={() => setSelectedTruck(id => id === truck.id ? null : truck.id)}
+                style={{
+                  padding: "10px 16px", cursor: "pointer",
+                  borderLeft: isSelected ? `3px solid ${meta.dot}` : "3px solid transparent",
+                  background: isSelected ? `${meta.dot}0d` : "transparent",
+                  borderBottom: "1px solid #0f1923",
+                  transition: "background .15s",
+                }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 700, fontSize: 12, color: "#cdd9e5" }}>{truck.label}</span>
+                  <span style={{
+                    fontSize: 9, padding: "2px 6px", borderRadius: 2,
+                    background: `${meta.dot}22`, color: meta.dot,
+                    letterSpacing: 1, textTransform: "uppercase",
+                  }}>{meta.label}</span>
+                </div>
+                <div style={{ fontSize: 10, color: "#3d5470", marginTop: 4 }}>
+                  {truck.driver}
+                </div>
+                <div style={{ fontSize: 10, color: "#3d5470" }}>{truck.cargo}</div>
+
+                {/* Progress bar */}
+                <div style={{ marginTop: 8, height: 3, background: "#1a2535", borderRadius: 2 }}>
+                  <div style={{
+                    height: "100%", borderRadius: 2,
+                    width: `${truck.progressPct}%`,
+                    background: meta.dot,
+                    transition: "width .3s",
+                  }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+                  <span style={{ fontSize: 9, color: "#2e4058" }}>{truck.progressPct}%</span>
+                  {truck.status === "in_transit" && (
+                    <span style={{ fontSize: 9, color: "#2e4058" }}>ETA {truck.eta}</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </aside>
+
+        {/* MAP */}
+        <div style={{ flex: 1, position: "relative" }}>
+          <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+
+          {/* Selected truck detail panel */}
+          {selectedTruckData && (
+            <div style={{
+              position: "absolute", bottom: 20, left: 20,
+              background: "#0a0f16ee", border: "1px solid #1e2a38",
+              borderLeft: `3px solid ${STATUS_META[selectedTruckData.status].dot}`,
+              padding: "14px 18px", borderRadius: 6,
+              minWidth: 220, backdropFilter: "blur(8px)",
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#cdd9e5", marginBottom: 6 }}>
+                {selectedTruckData.label}
+              </div>
+              {([
+                ["Driver",   selectedTruckData.driver],
+                ["Cargo",    selectedTruckData.cargo],
+                ["Status",   STATUS_META[selectedTruckData.status].label],
+                ["Progress", `${selectedTruckData.progressPct}%`],
+                ["Speed",    `${selectedTruckData.speed} km/h`],
+                ["Route",    `${cityForRoute(selectedTruckData.routeId, "from")} → ${cityForRoute(selectedTruckData.routeId, "to")}`],
+              ] as [string,string][]).map(([k,v]) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 4 }}>
+                  <span style={{ color: "#2e4058", textTransform: "uppercase", letterSpacing: 1 }}>{k}</span>
+                  <span style={{ color: STATUS_META[selectedTruckData.status].dot }}>{v}</span>
+                </div>
+              ))}
+              <button onClick={() => setSelectedTruck(null)} style={{
+                marginTop: 10, width: "100%", padding: "4px 0",
+                background: "transparent", border: "1px solid #1e2a38",
+                color: "#4a6080", cursor: "pointer", fontSize: 10,
+                borderRadius: 3, letterSpacing: 1,
+              }}>CLOSE</button>
+            </div>
+          )}
+
+          {/* Legend */}
+          <div style={{
+            position: "absolute", top: 12, left: 12,
+            background: "#0a0f16cc", border: "1px solid #1e2a38",
+            padding: "10px 14px", borderRadius: 5, backdropFilter: "blur(6px)",
+          }}>
+            {[
+              { shape: "circle", color: "#4ade80", label: "Collection" },
+              { shape: "square", color: "#f97316", label: "Shed" },
+            ].map(({ shape, color, label }) => (
+              <div key={label} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5 }}>
+                <div style={{
+                  width: 10, height: 10,
+                  borderRadius: shape === "circle" ? "50%" : 2,
+                  background: color,
+                }} />
+                <span style={{ fontSize: 10, color: "#4a6080", textTransform: "uppercase", letterSpacing: 1 }}>{label}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: "1px solid #1e2a38", marginTop: 6, paddingTop: 6 }}>
+              {(Object.entries(STATUS_META) as [TruckStatus, typeof STATUS_META[TruckStatus]][]).map(([s, m]) => (
+                <div key={s} style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: m.dot }} />
+                  <span style={{ fontSize: 10, color: "#4a6080", textTransform: "uppercase", letterSpacing: 1 }}>{m.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
