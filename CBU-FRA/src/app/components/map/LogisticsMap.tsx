@@ -80,13 +80,13 @@ const mkTruck = (
 };
 
 export const INITIAL_TRUCKS: Truck[] = [
-  mkTruck("T1","ZMB-001", 1, "in_transit", "Chanda Mwamba",  "Copper Ore",   35, 60),
+  mkTruck("T1","ZMB-001", 1, "in_transit", "Chanda Mwamba",  "Soya beans",   35, 60),
   mkTruck("T2","ZMB-002", 1, "loading",    "Bwalya Kunda",   "Maize",         0, 55),
   mkTruck("T3","ZMB-003", 2, "in_transit", "Mutale Phiri",   "Fertiliser",   62, 50),
-  mkTruck("T4","ZMB-004", 2, "at_shed",    "Kalunga Banda",  "Copper Ore",  100, 65),
-  mkTruck("T5","ZMB-005", 3, "in_transit", "Mwape Zulu",     "Charcoal",     18, 45),
+  mkTruck("T4","ZMB-004", 2, "at_shed",    "Kalunga Banda",  "Sun flower",  100, 65),
+  mkTruck("T5","ZMB-005", 3, "in_transit", "Mwape Zulu",     "Groundnuts",     18, 45),
   mkTruck("T6","ZMB-006", 3, "delayed",    "Tembo Lungu",    "Cotton",       40, 30),
-  mkTruck("T7","ZMB-007", 4, "in_transit", "Kapaso Mulenga", "Electronics",  75, 70),
+  mkTruck("T7","ZMB-007", 4, "in_transit", "Kapaso Mulenga", "Seed",  75, 70),
   mkTruck("T8","ZMB-008", 4, "at_shed",    "Sichone Daka",   "Maize",       100, 60),
 ];
 
@@ -301,7 +301,7 @@ export default function LogisticsMap() {
       LOCATIONS.forEach(loc => {
         const el = locationMarkerEl(loc.type);
         const popup = new maplibregl.Popup({ offset: 12, closeButton: false })
-          .setHTML(`<div style="font-family:monospace;font-size:11px;color:#111">
+          .setHTML(`<div style="font-family:arial;font-size:11px;color:#111">
             <strong>${loc.name}</strong><br/>${loc.city} · ${loc.type}
           </div>`);
         new maplibregl.Marker({ element: el })
@@ -394,7 +394,7 @@ export default function LogisticsMap() {
     <div style={{
       display: "flex", flexDirection: "column", height: "100vh",
       background: "#0d1117", color: "#e2e8f0",
-      fontFamily: "'DM Mono', 'Fira Mono', 'Courier New', monospace",
+      fontFamily: "'arial',monospace",
     }}>
 
       {/* ── HEADER ─────────────────────────── */}

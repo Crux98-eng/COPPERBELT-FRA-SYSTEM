@@ -81,14 +81,7 @@ export function RootLayout() {
               Real-time sync
             </p>
           </div>
-          <Link
-            to="/login"
-            className="group mt-4 flex items-center gap-3 rounded-2xl border border-sidebar-border/40 bg-[red]/50 px-4 py-4 text-sidebar-foreground/80 hover:border-sidebar-border/70 hover:bg-sidebar-accent/15 hover:text-sidebar-accent-foreground transition-colors"
-          >
-            <LogOut className="w-5 h-5 text-sidebar-ring text-white" />
-            <span className="flex-1 text-[1.05rem] font-medium">Logout</span>
-            <span className="w-2.5 h-2.5 rounded-full bg-white opacity-70 group-hover:opacity-100" />
-          </Link>
+         
         </div>
       </aside>
 
