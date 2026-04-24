@@ -6,7 +6,7 @@ import {
   Warehouse,
   AlertTriangle,
   Map,
-  LogOut
+  LogOut,
 } from "lucide-react";
 
 export function RootLayout() {
@@ -29,40 +29,63 @@ export function RootLayout() {
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col">
-        <div className="p-6 border-b border-sidebar-border">
-          <h1 className="text-xl text-white">FRA System</h1>
-          <p className="text-sm text-sidebar-foreground/70 mt-1">Agricultural Management</p>
+      <aside className="w-72 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border/30 px-6 py-6 overflow-y-auto">
+        <div className="pb-6 border-b border-sidebar-border/30">
+          <div className="w-11 h-11 rounded-xl bg-sidebar-accent/15 border border-sidebar-border/40 text-sidebar-foreground/35 grid place-items-center text-s font-semibold">
+            FR
+          </div>
+          <p className="mt-5 text-[9px] tracking-[0.28em] uppercase text-sidebar-foreground/60">
+            COPPERBELT FRA
+          </p>
+          <h1 className="mt-1 text-s font-semibold leading-tight text-sidebar-foreground">
+            Admin Console
+          </h1>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 pt-6 space-y-3">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+              className={`group flex items-center gap-3 rounded-2xl border px-4 py-4 transition-colors ${
                 isActive(item.path)
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  ? "border-sidebar-border bg-sidebar-accent/25 text-sidebar-accent-foreground"
+                  : "border-sidebar-border/40 bg-sidebar-accent/5 text-sidebar-foreground/80 hover:border-sidebar-border/70 hover:bg-sidebar-accent/15 hover:text-sidebar-accent-foreground"
               }`}
             >
-              <item.icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              <item.icon className="w-5 h-5 text-sidebar-ring" />
+              <span className="flex-1 text-[0.85rem] font-medium">{item.label}</span>
+              <span
+                className={`w-2.5 h-2.5 rounded-full transition-opacity ${
+                  isActive(item.path)
+                    ? "bg-sidebar-ring opacity-100"
+                    : "bg-sidebar-ring/80 opacity-70 group-hover:opacity-100"
+                }`}
+              />
             </Link>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-sidebar-border">
-          <div className="px-4 py-3 mb-2 bg-sidebar-accent/30 rounded-md">
-            <p className="text-sm text-sidebar-foreground/90">Admin Officer</p>
-            <p className="text-xs text-sidebar-foreground/60">officer@fra.gov.zm</p>
+        <div className="pt-6 border-t border-sidebar-border/30">
+          <div className="px-5 py-6 rounded-3xl border border-sidebar-border/40 bg-sidebar-accent/10">
+            <p className="text-xs tracking-[0.26em] uppercase text-sidebar-foreground/65">
+              System Status
+            </p>
+            <p className="mt-3 text-[0.5rem] leading-tight text-sidebar-foreground">
+              All services operational
+            </p>
+            <p className="mt-4 inline-flex items-center gap-2 text-sidebar-ring text-[1.02rem]">
+              <span className="w-2.5 h-2.5 rounded-full bg-sidebar-ring" />
+              Real-time sync
+            </p>
           </div>
           <Link
             to="/login"
-            className="flex items-center gap-3 px-4 py-3 rounded-md text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+            className="group mt-4 flex items-center gap-3 rounded-2xl border border-sidebar-border/40 bg-[red]/50 px-4 py-4 text-sidebar-foreground/80 hover:border-sidebar-border/70 hover:bg-sidebar-accent/15 hover:text-sidebar-accent-foreground transition-colors"
           >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
+            <LogOut className="w-5 h-5 text-sidebar-ring text-white" />
+            <span className="flex-1 text-[1.05rem] font-medium">Logout</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-white opacity-70 group-hover:opacity-100" />
           </Link>
         </div>
       </aside>
