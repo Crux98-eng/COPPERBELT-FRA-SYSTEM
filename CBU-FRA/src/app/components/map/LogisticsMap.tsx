@@ -96,7 +96,7 @@ export const INITIAL_TRUCKS: Truck[] = [
 const ROUTE_COLORS: Record<number, string> = {
   1: "#22d3ee",
   2: "#a78bfa",
-  3: "#fb923c",
+  3: "#016619",
   4: "#34d399",
 };
 

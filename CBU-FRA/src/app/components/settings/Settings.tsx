@@ -1,8 +1,7 @@
 ﻿import React, { useState } from "react";
 import { Link } from "react-router";
 
-type Tab = "general" | "fleet" | "notifications" | "users" | "integrations" | "security";
-
+type Tab = "general" |  "integrations" 
 interface ToggleProps {
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -34,12 +33,6 @@ interface User {
   active: boolean;
 }
 
-const USERS: User[] = [
-  { id: "u1", name: "Chanda Mwamba",  email: "chanda@zambiafreight.zm",  role: "Admin",      city: "Lusaka",  active: true  },
-  { id: "u2", name: "Mutale Phiri",   email: "mutale@zambiafreight.zm",  role: "Dispatcher", city: "Chipata", active: true  },
-  { id: "u3", name: "Bwalya Kunda",   email: "bwalya@zambiafreight.zm",  role: "Viewer",     city: "Ndola",   active: false },
-  { id: "u4", name: "Mwape Zulu",     email: "mwape@zambiafreight.zm",   role: "Dispatcher", city: "Mongu",   active: true  },
-];
 
 const ROLE_COLOR: Record<User["role"], string> = {
   Admin:      "#f9a825",
@@ -341,81 +334,6 @@ const NotificationsPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
   );
 };
 
-const UsersPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
-  const [users, setUsers] = useState<User[]>(USERS);
-
-  const toggleActive = (id: string) => {
-    setUsers(us => us.map(u => u.id === id ? { ...u, active: !u.active } : u));
-    dirty();
-  };
-
-  return (
-    <>
-      <SectionTitle icon="" title="Team Members" subtitle="Manage who has access to the fleet dashboard." />
-      <Card style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", borderBottom: "1px solid #e8ecf0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span style={{ fontSize: 13, color: "#6b7280" }}>{users.length} members</span>
-          <button style={{
-            padding: "7px 16px", borderRadius: 8, border: "none",
-            background: "#1B5E20", color: "#fff", cursor: "pointer",
-            fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
-          }}> Invite Member</button>
-        </div>
-        {users.map((u, i) => (
-          <div key={u.id} style={{
-            display: "flex", alignItems: "center", padding: "14px 20px",
-            borderBottom: i < users.length - 1 ? "1px solid #f3f4f6" : "none",
-            gap: 14,
-          }}>
-            {/* Avatar */}
-            <div style={{
-              width: 38, height: 38, borderRadius: "50%", flexShrink: 0,
-              background: `${ROLE_COLOR[u.role]}22`,
-              border: `2px solid ${ROLE_COLOR[u.role]}`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 14, fontWeight: 700, color: ROLE_COLOR[u.role],
-            }}>
-              {u.name.split(" ").map(n => n[0]).join("")}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#0D1B2A" }}>{u.name}</div>
-              <div style={{ fontSize: 12, color: "#9ca3af" }}>{u.email}</div>
-            </div>
-            <div style={{ fontSize: 11, color: "#6b7280", width: 70 }}>{u.city}</div>
-            <span style={{
-              fontSize: 10, padding: "3px 10px", borderRadius: 20,
-              background: `${ROLE_COLOR[u.role]}18`,
-              color: ROLE_COLOR[u.role],
-              fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase",
-              width: 90, textAlign: "center",
-            }}>{u.role}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, color: u.active ? "#1B5E20" : "#9ca3af" }}>
-                {u.active ? "Active" : "Inactive"}
-              </span>
-              <button
-                onClick={() => toggleActive(u.id)}
-                style={{
-                  width: 36, height: 20, borderRadius: 10,
-                  background: u.active ? "#1B5E20" : "#d1d5db",
-                  border: "none", cursor: "pointer", position: "relative", flexShrink: 0,
-                  transition: "background .2s",
-                }}
-              >
-                <span style={{
-                  position: "absolute", top: 2,
-                  left: u.active ? 18 : 2,
-                  width: 16, height: 16, borderRadius: "50%", background: "#fff",
-                  transition: "left .2s",
-                }} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </Card>
-    </>
-  );
-};
 
 const IntegrationsPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
   const integrations = [
@@ -519,11 +437,7 @@ const SecurityPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "general", label: "General" },
-  { id: "fleet", label: "Fleet" },
-  { id: "notifications", label: "Notifications" },
-  { id: "users", label: "Users" },
   { id: "integrations", label: "Integrations" },
-  { id: "security", label: "Security" },
 ];
 
 const Settings: React.FC = () => {
@@ -633,7 +547,6 @@ const Settings: React.FC = () => {
                 }}
               >
                 {tab.label}
-                {tab.id === "notifications" && isDirty ? " *" : ""}
               </button>
             );
           })}
@@ -641,11 +554,7 @@ const Settings: React.FC = () => {
 
         <div style={{ maxWidth: 820 }}>
           {activeTab === "general"       && <GeneralPanel       dirty={markDirty} />}
-          {activeTab === "fleet"         && <FleetPanel         dirty={markDirty} />}
-          {activeTab === "notifications" && <NotificationsPanel dirty={markDirty} />}
-          {activeTab === "users"         && <UsersPanel         dirty={markDirty} />}
           {activeTab === "integrations"  && <IntegrationsPanel  dirty={markDirty} />}
-          {activeTab === "security"      && <SecurityPanel      dirty={markDirty} />}
           <SaveBar dirty={isDirty} onSave={handleSave} onDiscard={handleDiscard} />
         </div>
       </div>

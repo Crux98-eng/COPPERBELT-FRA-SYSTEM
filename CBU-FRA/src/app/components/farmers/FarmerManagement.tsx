@@ -75,6 +75,15 @@ const farmersData = [
     status: "active",
     registered: "2026-02-14",
   },
+  {
+    id: "F009",
+    name: "Eric Sakala",
+    nrc: "890123/45/8",
+    location: "Chpata, Eastern",
+    crop: "Maize",
+    status: "active",
+    registered: "2026-02-14",
+  },
 ];
 
 export function FarmerManagement() {
@@ -122,8 +131,8 @@ export function FarmerManagement() {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6  bg-[green]/30 ">
+      <div className="flex items-center justify-between mb-6 ">
         <div>
           <h1 className="text-3xl text-foreground mb-2">Farmer Management</h1>
           <p className="text-muted-foreground">

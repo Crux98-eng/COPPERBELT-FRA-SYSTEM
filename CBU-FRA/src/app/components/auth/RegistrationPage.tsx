@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { User, Phone, MapPin, Camera, Fingerprint, CheckCircle } from "lucide-react";
+import { User, Phone, MapPin, Camera, Fingerprint, CheckCircle,ArrowBigLeft } from "lucide-react";
 
 export function RegistrationPage() {
   const [biometricStatus, setBiometricStatus] = useState<"pending" | "verified">("pending");
   const [gpsStatus, setGpsStatus] = useState<"idle" | "capturing" | "captured">("idle");
 
   return (
+    <>
     <div className="min-h-screen bg-background p-4 py-8">
+      <Link to={'/Dashboard'} className="w-max flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-6 ">
+      <ArrowBigLeft className="w-5 h-5 text-muted-foreground" />  Back to Dashboard
+      </Link>
       <div className="max-w-4xl mx-auto">
         <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
           <div className="bg-primary text-primary-foreground p-6">
@@ -216,5 +220,7 @@ export function RegistrationPage() {
         </p>
       </div>
     </div>
+
+    </>
   );
 }
