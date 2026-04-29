@@ -1,15 +1,80 @@
-import { useState } from "react";
-import { Link } from "react-router";
-import { User, Phone, MapPin, Camera, Fingerprint, CheckCircle,ArrowBigLeft } from "lucide-react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router";
+import { useMutation } from "@tanstack/react-query";
+import { ArrowBigLeft, Phone, User } from "lucide-react";
+import { useAuth } from "@/app/auth/AuthContext";
+import { apiRequest } from "@/app/lib/api";
+
+interface FarmerRegistrationForm {
+  name: string;
+  nrc: string;
+  phone: string;
+  district: string;
+  crop: string;
+}
 
 export function RegistrationPage() {
-  const [biometricStatus, setBiometricStatus] = useState<"pending" | "verified">("pending");
-  const [gpsStatus, setGpsStatus] = useState<"idle" | "capturing" | "captured">("idle");
+  const [biometricStatus] = useState<"pending" | "verified">("verified");
+  const [gpsStatus] = useState<"idle" | "capturing" | "captured">("captured");
+  const [form, setForm] = useState<FarmerRegistrationForm>({
+    name: "",
+    nrc: "",
+    phone: "",
+    district: "",
+    crop: "",
+  });
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { token } = useAuth();
+
+  const registrationMutation = useMutation({
+    mutationFn: (payload: FarmerRegistrationForm) =>
+      apiRequest<{ id: string; status: string }>("/farmers", {
+        method: "POST",
+        token,
+        body: {
+          name: payload.name,
+          nrc: payload.nrc,
+          phone: payload.phone,
+          district: payload.district,
+          village: "",
+          crop: payload.crop,
+          biometricStatus,
+          fingerprintTemplate: "",
+          facePhoto: "",
+          gps: {
+            lat: -12.9587,
+            lng: 28.6366,
+          },
+        },
+      }),
+    onSuccess: () => {
+      navigate("/dashboard/farmers");
+    },
+  });
+
+  const updateField =
+    (field: keyof FarmerRegistrationForm) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setForm((current) => ({ ...current, [field]: event.target.value }));
+    };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    try {
+      await registrationMutation.mutateAsync(form);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to register farmer");
+    }
+  };
+
 
   return (
     <>
     <div className="min-h-screen bg-background p-4 py-8">
-      <Link to={'/Dashboard'} className="w-max flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-6 ">
+      <Link to="/dashboard" className="w-max flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors mb-6 ">
       <ArrowBigLeft className="w-5 h-5 text-muted-foreground" />  Back to Dashboard
       </Link>
       <div className="max-w-4xl mx-auto">
@@ -22,7 +87,7 @@ export function RegistrationPage() {
           </div>
 
           <div className="p-6">
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
@@ -33,6 +98,9 @@ export function RegistrationPage() {
                     <input
                       type="text"
                       placeholder="Enter full name"
+                      value={form.name}
+                      onChange={updateField("name")}
+                      required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -45,6 +113,9 @@ export function RegistrationPage() {
                   <input
                     type="text"
                     placeholder="123456/78/9"
+                    value={form.nrc}
+                    onChange={updateField("nrc")}
+                    required
                     className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -58,17 +129,26 @@ export function RegistrationPage() {
                     <input
                       type="tel"
                       placeholder="+260 xxx xxx xxx"
+                      value={form.phone}
+                      onChange={updateField("phone")}
+                      required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
 
+
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
                     District
                   </label>
-                  <select className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option>Select District</option>
+                  <select
+                    value={form.district}
+                    onChange={updateField("district")}
+                    required
+                    className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Select District</option>
                     <option>Lusaka</option>
                     <option>Chipata</option>
                     <option>Ndola</option>
@@ -78,26 +158,18 @@ export function RegistrationPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm mb-2 text-card-foreground">
-                    Village
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Enter village name"
-                      className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
 
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
                     Primary Crop
                   </label>
-                  <select className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary">
-                    <option>Select Crop Type</option>
+                  <select
+                    value={form.crop}
+                    onChange={updateField("crop")}
+                    required
+                    className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Select Crop Type</option>
                     <option>Maize</option>
                     <option>Groundnuts</option>
                     <option>Soya Beans</option>
@@ -107,108 +179,34 @@ export function RegistrationPage() {
                 </div>
               </div>
 
-              <div className="border-t border-border pt-6 mt-6">
-                <h3 className="text-lg text-card-foreground mb-4">Biometric Capture</h3>
+              
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="border border-border rounded-lg p-6 bg-muted/30">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-card-foreground">Fingerprint Scan</h4>
-                      {biometricStatus === "verified" && (
-                        <CheckCircle className="w-5 h-5 text-secondary" />
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-center py-6">
-                      <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center mb-4 border-4 border-primary/20">
-                        <Fingerprint
-                          className={`w-16 h-16 ${
-                            biometricStatus === "verified"
-                              ? "text-secondary"
-                              : "text-primary"
-                          }`}
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setBiometricStatus("verified")}
-                        className={`px-6 py-2 rounded-md ${
-                          biometricStatus === "verified"
-                            ? "bg-secondary text-secondary-foreground"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90"
-                        }`}
-                      >
-                        {biometricStatus === "verified" ? "Verified" : "Capture Fingerprint"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="border border-border rounded-lg p-6 bg-muted/30">
-                    <h4 className="text-card-foreground mb-4">Face Capture</h4>
-
-                    <div className="flex flex-col items-center py-6">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4 border-2 border-dashed border-border">
-                        <Camera className="w-12 h-12 text-muted-foreground" />
-                      </div>
-
-                      <button
-                        type="button"
-                        className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                      >
-                        Capture Photo
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-6 mt-6">
-                <h3 className="text-lg text-card-foreground mb-4">GPS Location</h3>
-
-                <div className="flex items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setGpsStatus("capturing");
-                      setTimeout(() => setGpsStatus("captured"), 1500);
-                    }}
-                    disabled={gpsStatus === "capturing"}
-                    className={`px-6 py-3 rounded-md ${
-                      gpsStatus === "captured"
-                        ? "bg-secondary text-secondary-foreground"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90"
-                    } disabled:opacity-50`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
-                      {gpsStatus === "idle" && "Capture GPS Location"}
-                      {gpsStatus === "capturing" && "Capturing..."}
-                      {gpsStatus === "captured" && "Location Captured"}
-                    </div>
-                  </button>
-
-                  {gpsStatus === "captured" && (
-                    <div className="text-sm text-muted-foreground">
-                      Coordinates: -15.4167° S, 28.2833° E
-                    </div>
-                  )}
-                </div>
-              </div>
+              {error && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
 
               <div className="flex gap-4 pt-6 border-t border-border">
-                <Link
-                  to="/login"
+                <button
+                  type="button"
+                  onClick={() => navigate("/dashboard/farmers")}
                   className="px-6 py-3 border border-border rounded-md text-card-foreground hover:bg-muted transition-colors"
                 >
                   Cancel
-                </Link>
+                </button>
                 <button
                   type="submit"
-                  disabled={biometricStatus !== "verified" || gpsStatus !== "captured"}
+                  disabled={
+                    registrationMutation.isPending ||
+                    biometricStatus !== "verified" ||
+                    gpsStatus !== "captured"
+                  }
                   className="flex-1 bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Submit Registration
+                  {registrationMutation.isPending
+                    ? "Submitting..."
+                    : "Submit Registration"}
                 </button>
               </div>
             </form>

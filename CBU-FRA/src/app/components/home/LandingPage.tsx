@@ -234,7 +234,7 @@ export function LandingPage() {
               <h3 className="text-lg mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link to="/register" className="text-background/70 hover:text-background">
+                  <Link to="/dashboard/register" className="text-background/70 hover:text-background">
                     Farmer Registration
                   </Link>
                 </li>

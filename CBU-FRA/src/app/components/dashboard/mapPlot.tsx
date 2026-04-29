@@ -24,7 +24,7 @@ const fallbackCoordinates: LatLng[] = [
 ];
 
 const mapStyleUrl = "https://demotiles.maplibre.org/style.json";
-
+ 
 const farmFillLayer: LayerProps = {
   id: "farm-area-fill",
   type: "fill",

@@ -139,13 +139,13 @@ export function FarmerManagement() {
             Manage registered farmers and their applications
           </p>
         </div>
-        <Link
+        {/* <Link
           to="/register"
           className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
           <UserPlus className="w-5 h-5" />
           Register New Farmer
-        </Link>
+        </Link> */}
       </div>
 
       <div className="bg-card border border-border rounded-lg shadow-sm">
@@ -182,9 +182,9 @@ export function FarmerManagement() {
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-6 py-4 text-left text-sm text-muted-foreground">
+                {/* <th className="px-6 py-4 text-left text-sm text-muted-foreground">
                   Farmer ID
-                </th>
+                </th> */}
                 <th className="px-6 py-4 text-left text-sm text-muted-foreground">
                   Name
                 </th>
@@ -211,9 +211,9 @@ export function FarmerManagement() {
                   key={farmer.id}
                   className="hover:bg-muted/20 transition-colors"
                 >
-                  <td className="px-6 py-4 text-sm text-card-foreground">
+                  {/* <td className="px-6 py-4 text-sm text-card-foreground">
                     {farmer.id}
-                  </td>
+                  </td> */}
                   <td className="px-6 py-4 text-sm text-card-foreground">
                     {farmer.name}
                   </td>

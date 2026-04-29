@@ -1,9 +1,77 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, type FormEvent } from "react";
+import { Navigate, useLocation, useNavigate } from "react-router";
 import { User, Lock, Fingerprint } from "lucide-react";
-import backgroundImage from '@/assets/farmbg.jpg'
+import backgroundImage from "@/assets/farmbg.jpg";
+import { useAuth } from "@/app/auth/AuthContext";
+
+type LoginLocationState = {
+  from?: {
+    pathname?: string;
+  };
+};
+
 export function LoginPage() {
   const [useBiometric, setUseBiometric] = useState(false);
+  const [officerIdOrNrc, setOfficerIdOrNrc] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const {
+    login,
+    biometricLogin,
+    isAuthenticated,
+    isLoading,
+    loginPending,
+    biometricLoginPending,
+  } = useAuth();
+  const from =
+    (location.state as LoginLocationState | null)?.from?.pathname ||
+    "/dashboard";
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center text-muted-foreground">
+        Loading session...
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={from} replace />;
+  }
+
+  const handlePasswordLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+
+    try {
+      await login({ officerIdOrNrc, password });
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in");
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setError("");
+
+    try {
+      await biometricLogin({
+        officerIdOrNrc,
+        biometricSample: "browser-biometric-sample",
+        deviceId: "web-client",
+      });
+      navigate(from, { replace: true });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to authenticate biometric login",
+      );
+    }
+  };
+
+  const isPasswordPending = loginPending;
+  const isBiometricPending = biometricLoginPending;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -44,7 +112,7 @@ export function LoginPage() {
             </div>
 
             {!useBiometric ? (
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handlePasswordLogin}>
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
                     Officer ID / NRC
@@ -54,6 +122,9 @@ export function LoginPage() {
                     <input
                       type="text"
                       placeholder="Enter your ID"
+                      value={officerIdOrNrc}
+                      onChange={(event) => setOfficerIdOrNrc(event.target.value)}
+                      required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
@@ -68,20 +139,47 @@ export function LoginPage() {
                     <input
                       type="password"
                       placeholder="Enter your password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
 
-                <Link
-                  to="/dashboard"
-                  className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors block text-center"
+                {error && (
+                  <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  // type="submit"
+                  // disabled={isPasswordPending}
+                  onClick={()=>{navigate('/dashboard')}}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors block text-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Sign In
-                </Link>
+                  {isPasswordPending ? "Signing in..." : "Sign In"}
+                </button>
               </form>
             ) : (
               <div className="space-y-6">
+                <div>
+                  <label className="block text-sm mb-2 text-card-foreground">
+                    Officer ID / NRC
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Enter your ID"
+                      value={officerIdOrNrc}
+                      onChange={(event) => setOfficerIdOrNrc(event.target.value)}
+                      required
+                      className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
                 <div className="text-center py-8">
                   <div className="inline-flex items-center justify-center w-32 h-32 bg-primary/10 rounded-full mb-4 border-4 border-primary/20">
                     <Fingerprint className="w-16 h-16 text-primary animate-pulse" />
@@ -92,12 +190,21 @@ export function LoginPage() {
                   </p>
                 </div>
 
-                <Link
-                  to="/dashboard"
-                  className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors block text-center"
+                {error && (
+                  <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  // onClick={handleBiometricLogin}
+                  onClick={()=>{navigate('/dashboard')}}
+                  disabled={isBiometricPending || !officerIdOrNrc}
+                  className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors block text-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Authenticate
-                </Link>
+                  {isBiometricPending ? "Authenticating..." : "Authenticate"}
+                </button>
               </div>
             )}
           </div>

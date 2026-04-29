@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from "react-router";
+import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   Users,
@@ -9,9 +9,12 @@ import {
   LogOut,
   Settings,
 } from "lucide-react";
+import { useAuth } from "@/app/auth/AuthContext";
 
 export function RootLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
 
   const isActive = (path: string) => {
     if (path === "/dashboard" && location.pathname === "/dashboard") return true;
@@ -28,6 +31,11 @@ export function RootLayout() {
     { path: "/dashboard/map", label: "Logistics Map", icon: Map },
     { path: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -69,6 +77,19 @@ export function RootLayout() {
         </nav>
 
         <div className="pt-6 border-t border-sidebar-border/30">
+          {user && (
+            <div className="mb-4 px-5 py-4 rounded-2xl border border-sidebar-border/40 bg-sidebar-accent/10">
+              <p className="text-xs tracking-[0.22em] uppercase text-sidebar-foreground/65">
+                Signed in
+              </p>
+              <p className="mt-2 text-sm font-medium text-sidebar-foreground">
+                {user.name}
+              </p>
+              <p className="mt-1 text-xs text-sidebar-foreground/65">
+                {user.role}
+              </p>
+            </div>
+          )}
           <div className="px-5 py-6 rounded-3xl border border-sidebar-border/40 bg-sidebar-accent/10">
             <p className="text-xs tracking-[0.26em] uppercase text-sidebar-foreground/65">
               System Status
@@ -81,6 +102,14 @@ export function RootLayout() {
               Real-time sync
             </p>
           </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-sidebar-border/50 px-4 py-3 text-sm text-sidebar-foreground/85 transition-colors hover:bg-sidebar-accent/15 hover:text-sidebar-accent-foreground"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
          
         </div>
       </aside>

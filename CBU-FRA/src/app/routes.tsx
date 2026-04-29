@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import { RootLayout } from "./components/layouts/RootLayout";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { LandingPage } from "./components/home/LandingPage";
 import { LoginPage } from "./components/auth/LoginPage";
 import { RegistrationPage } from "./components/auth/RegistrationPage";
@@ -17,18 +18,23 @@ export const router = createBrowserRouter([
     Component: LandingPage,
   },
   {
-    path: "/dashboard",
-    Component: RootLayout,
+    Component: ProtectedRoute,
     children: [
-      { index: true, Component: Dashboard },
-      { path: "farmers", Component: FarmerManagement },
-      { path: "farmers/:id", Component: FarmerDetail },
-      { path: "transport", Component: TransportLogistics },
-      { path: "shed", Component: ShedProcurement },
-      { path: "fraud", Component: FraudDetection },
-      { path: "map", Component: LogisticsMap },
-      { path: "settings", Component: Settings },
-      { path: "register",Component: RegistrationPage},
+      {
+        path: "/dashboard",
+        Component: RootLayout,
+        children: [
+          { index: true, Component: Dashboard },
+          { path: "farmers", Component: FarmerManagement },
+          { path: "farmers/:id", Component: FarmerDetail },
+          { path: "transport", Component: TransportLogistics },
+          { path: "shed", Component: ShedProcurement },
+          { path: "fraud", Component: FraudDetection },
+          { path: "map", Component: LogisticsMap },
+          { path: "settings", Component: Settings },
+          { path: "register", Component: RegistrationPage },
+        ],
+      },
     ],
   },
   {
