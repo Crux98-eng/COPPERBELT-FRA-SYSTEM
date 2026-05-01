@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router";
 import {
   LayoutDashboard,
   Users,
-  Truck,
+  MessageSquare as Notification,
   Warehouse,
   AlertTriangle,
   Map,
@@ -10,7 +10,7 @@ import {
   Settings,
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthContext";
-
+import logo from '@/assets/fra-cbu-logo.png';
 export function RootLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ export function RootLayout() {
   const navItems = [
     { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { path: "/dashboard/farmers", label: "Farmer Management", icon: Users },
-    { path: "/dashboard/transport", label: "Transport Logistics", icon: Truck },
+    { path: "/dashboard/transport", label: "Send Request to Farmers", icon: Notification },
     { path: "/dashboard/shed", label: "Shed Procurement", icon: Warehouse },
     { path: "/dashboard/fraud", label: "Fraud Detection", icon: AlertTriangle },
     { path: "/dashboard/map", label: "Logistics Map", icon: Map },
@@ -42,7 +42,7 @@ export function RootLayout() {
       <aside className="w-72 bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border/30 px-6 py-6 overflow-y-auto">
         <div className="pb-6 border-b border-sidebar-border/30">
           <div className="w-11 h-11 rounded-xl bg-sidebar-accent/15 border border-sidebar-border/40 text-sidebar-foreground/35 grid place-items-center text-s font-semibold">
-            FR
+            <img src={logo} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <p className="mt-5 text-[9px] tracking-[0.28em] uppercase text-sidebar-foreground/60">
             COPPERBELT FRA

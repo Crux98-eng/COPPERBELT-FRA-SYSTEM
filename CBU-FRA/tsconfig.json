@@ -11,7 +11,8 @@
     "types": ["vite/client"],
     "allowJs": true,
     "noEmit": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src", "vite.config.ts"]
 }

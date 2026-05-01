@@ -108,12 +108,97 @@ export function ShedProcurement() {
     return weight * pricePerKg;
   };
 
+  const [nrc, setNrc] = useState("");
+  const [items, setItems] = useState<{ crop: string; weight: string }[]>([
+    { crop: "", weight: "" },
+  ]);
+  const [review, setReview] = useState<{
+    nrc: string;
+    items: { crop: string; weight: number; amount: number }[];
+    totalWeight: number;
+    totalAmount: number;
+  } | null>(null);
+  const [error, setError] = useState("");
+
+  const updateItem = (
+    index: number,
+    field: "crop" | "weight",
+    value: string,
+  ) => {
+    setReview(null);
+    setItems((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    );
+  };
+
+  const addItem = () => {
+    setReview(null);
+    setItems((current) => [...current, { crop: "", weight: "" }]);
+  };
+
+  const removeItem = (index: number) => {
+    setReview(null);
+    setItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const handleProcurementSubmit = () => {
+    setError("");
+
+    if (!nrc.trim()) {
+      setError("Please enter the farmer's NRC number.");
+      return;
+    }
+
+    const normalizedItems = items.map((item) => ({
+      crop: item.crop.trim(),
+      weight: Number(item.weight),
+    }));
+
+    if (normalizedItems.length === 0) {
+      setError("Add at least one crop and weight pair.");
+      return;
+    }
+
+    if (
+      normalizedItems.some(
+        (item) => !item.crop || isNaN(item.weight) || item.weight <= 0,
+      )
+    ) {
+      setError("Each row must include a crop and a valid weight.");
+      return;
+    }
+
+    const reviewItems = normalizedItems.map((item) => ({
+      ...item,
+      amount: calculatePayment(item.weight),
+    }));
+
+    const totalWeight = reviewItems.reduce((sum, item) => sum + item.weight, 0);
+    const totalAmount = reviewItems.reduce((sum, item) => sum + item.amount, 0);
+
+    setReview({
+      nrc: nrc.trim(),
+      items: reviewItems,
+      totalWeight,
+      totalAmount,
+    });
+  };
+
+  const handleFinalSubmit = () => {
+    if (!review) return;
+    setError("");
+    // TODO: replace with backend submission call
+    console.log("Submitting procurement review", review);
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-3xl text-foreground mb-2">Shed Procurement</h1>
         <p className="text-muted-foreground">
-          Weighing, verification, and payment processing
+          Record purchased crops, review weights, and calculate payment.
         </p>
       </div>
 
@@ -128,7 +213,10 @@ export function ShedProcurement() {
               {arrivedBatches.map((batch) => (
                 <div
                   key={batch.id}
-                  onClick={() => setSelectedBatch(batch)}
+                  onClick={() => {
+                    setSelectedBatch(batch);
+                    setReview(null);
+                  }}
                   className={`p-4 cursor-pointer transition-colors ${
                     selectedBatch.id === batch.id
                       ? "bg-primary/5 border-l-4 border-l-primary"
@@ -189,230 +277,188 @@ export function ShedProcurement() {
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Scale className="w-5 h-5 text-secondary" />
-                    <p className="text-sm text-muted-foreground">Actual Weight</p>
+                    <p className="text-sm text-muted-foreground">Crop Type</p>
                   </div>
-                  {selectedBatch.actualWeight ? (
-                    <>
-                      <p className="text-2xl text-card-foreground">
-                        {selectedBatch.actualWeight} kg
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">Verified</p>
-                    </>
-                  ) : (
-                    <p className="text-2xl text-muted-foreground">-</p>
-                  )}
+                  <p className="text-2xl text-card-foreground">
+                    {selectedBatch.crop}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Arrival at {selectedBatch.arrivalTime}
+                  </p>
                 </div>
 
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="w-5 h-5 text-accent" />
-                    <p className="text-sm text-muted-foreground">Variance</p>
+                    <p className="text-sm text-muted-foreground">Status</p>
                   </div>
-                  {selectedBatch.variance !== null ? (
-                    <>
-                      <p
-                        className={`text-2xl ${getVarianceColor(
-                          selectedBatch.variance
-                        )}`}
-                      >
-                        {selectedBatch.variance > 0 ? "+" : ""}
-                        {selectedBatch.variance.toFixed(1)}%
-                        {getVarianceIcon(selectedBatch.variance)}
-                      </p>
-                      {Math.abs(selectedBatch.variance) > 5 ? (
-                        <p className="text-xs text-destructive mt-1">
-                          High variance - Review required
-                        </p>
-                      ) : Math.abs(selectedBatch.variance) <= 2 ? (
-                        <p className="text-xs text-secondary mt-1">
-                          Within acceptable range
-                        </p>
-                      ) : (
-                        <p className="text-xs text-accent mt-1">
-                          Moderate variance
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-2xl text-muted-foreground">-</p>
-                  )}
+                  <p className="text-2xl text-card-foreground">
+                    {selectedBatch.status}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedBatch.declaredBags} bag shipment
+                  </p>
                 </div>
               </div>
 
-              {selectedBatch.status === "pending-weighing" ? (
-                <div className="border border-border rounded-lg p-6 bg-muted/10">
-                  <h3 className="text-lg text-card-foreground mb-4 flex items-center gap-2">
-                    <Scale className="w-5 h-5" />
-                    Weighing Interface
-                  </h3>
+              <div className="border border-border rounded-lg p-6 bg-muted/10">
+                <h3 className="text-lg text-card-foreground mb-4 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-secondary" />
+                  Procurement Review
+                </h3>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm text-card-foreground mb-2">
+                      Farmer NRC
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter NRC number"
+                      value={nrc}
+                      onChange={(e) => {
+                        setReview(null);
+                        setNrc(e.target.value);
+                      }}
+                      className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
 
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm text-card-foreground mb-2">
-                        Enter Actual Weight (kg)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="0.00"
-                        value={weighingWeight}
-                        onChange={(e) => setWeighingWeight(e.target.value)}
-                        className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary text-2xl"
-                      />
+                    {items.map((item, index) => (
+                      <div
+                        key={index}
+                        className="grid gap-4 md:grid-cols-[2fr_1fr_auto] items-end"
+                      >
+                        <div>
+                          <label className="block text-sm text-card-foreground mb-2">
+                            Crop
+                          </label>
+                          <select
+                            value={item.crop}
+                            onChange={(e) => updateItem(index, "crop", e.target.value)}
+                            className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <option value="">Select crop</option>
+                            <option value="Maize">Maize</option>
+                            <option value="Groundnuts">Groundnuts</option>
+                            <option value="Soya Beans">Soya Beans</option>
+                            <option value="Cotton">Cotton</option>
+                            <option value="Sunflower">Sunflower</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm text-card-foreground mb-2">
+                            Weight (kg)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder="0.0"
+                            value={item.weight}
+                            onChange={(e) => updateItem(index, "weight", e.target.value)}
+                            className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          disabled={items.length === 1}
+                          className="h-12 px-4 py-3 text-sm border border-border rounded-md bg-destructive/5 text-destructive hover:bg-destructive/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors"
+                  >
+                    Add Crop
+                  </button>
+
+                  {error && (
+                    <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                      {error}
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleProcurementSubmit}
+                    className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Create Procurement Review
+                  </button>
+                </div>
+              </div>
+
+              {review && (
+                <div className="bg-card border border-border rounded-lg shadow-sm mt-6">
+                  <div className="p-6 border-b border-border">
+                    <h3 className="text-xl text-card-foreground mb-1">
+                      Purchase Review
+                    </h3>
+                    <p className="text-muted-foreground">
+                      NRC: {review.nrc}
+                    </p>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm">
+                        <thead className="text-muted-foreground border-b border-border">
+                          <tr>
+                            <th className="pb-3">Crop</th>
+                            <th className="pb-3">Weight (kg)</th>
+                            <th className="pb-3">Amount (ZMW)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {review.items.map((item, index) => (
+                            <tr key={index} className="border-b border-border">
+                              <td className="py-3 text-card-foreground">{item.crop}</td>
+                              <td className="py-3 text-card-foreground">{item.weight.toFixed(1)}</td>
+                              <td className="py-3 text-card-foreground">{item.amount.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
 
-                    {weighingWeight && (
-                      <div className="p-4 bg-accent/10 border border-accent/30 rounded-lg">
-                        <p className="text-sm text-card-foreground mb-2">
-                          Weight Comparison
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-muted/30 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total Weight</p>
+                        <p className="text-2xl text-card-foreground">
+                          {review.totalWeight.toFixed(1)} kg
                         </p>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Expected</p>
-                            <p className="text-card-foreground">
-                              {calculateExpectedWeight(
-                                selectedBatch.declaredBags
-                              )}{" "}
-                              kg
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Difference</p>
-                            <p
-                              className={getVarianceColor(
-                                calculateVariance(
-                                  parseFloat(weighingWeight),
-                                  calculateExpectedWeight(
-                                    selectedBatch.declaredBags
-                                  )
-                                )
-                              )}
-                            >
-                              {calculateVariance(
-                                parseFloat(weighingWeight),
-                                calculateExpectedWeight(selectedBatch.declaredBags)
-                              ) > 0
-                                ? "+"
-                                : ""}
-                              {calculateVariance(
-                                parseFloat(weighingWeight),
-                                calculateExpectedWeight(selectedBatch.declaredBags)
-                              ).toFixed(1)}
-                              %
-                            </p>
-                          </div>
-                        </div>
                       </div>
-                    )}
+                      <div className="p-4 bg-muted/30 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total Amount</p>
+                        <p className="text-2xl text-card-foreground">
+                          ZMW {review.totalAmount.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
 
-                    <button
-                      onClick={handleWeighSubmit}
-                      disabled={!weighingWeight || isProcessing}
-                      className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isProcessing ? "Processing..." : "Submit Weight"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="border border-secondary rounded-lg p-6 bg-secondary/5">
-                  <h3 className="text-lg text-card-foreground mb-4 flex items-center gap-2">
-                    <CheckCircle className="w-5 h-5 text-secondary" />
-                    Weighing Completed
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Expected Weight</p>
-                        <p className="text-card-foreground">
-                          {calculateExpectedWeight(selectedBatch.declaredBags)} kg
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Actual Weight</p>
-                        <p className="text-card-foreground">
-                          {selectedBatch.actualWeight} kg
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Variance</p>
-                        <p
-                          className={getVarianceColor(selectedBatch.variance)}
-                        >
-                          {selectedBatch.variance! > 0 ? "+" : ""}
-                          {selectedBatch.variance!.toFixed(1)}%
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Status</p>
-                        {Math.abs(selectedBatch.variance!) <= 5 ? (
-                          <p className="text-secondary">Approved</p>
-                        ) : (
-                          <p className="text-destructive">Needs Review</p>
-                        )}
-                      </div>
+                    <div className="pt-4">
+                      <button
+                        type="button"
+                        onClick={handleFinalSubmit}
+                        className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        Submit Procurement
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
-
-          {selectedBatch.actualWeight && (
-            <div className="bg-card border border-border rounded-lg shadow-sm">
-              <div className="p-6 border-b border-border">
-                <h3 className="text-xl text-card-foreground flex items-center gap-2">
-                  <DollarSign className="w-6 h-6" />
-                  Payment Generation
-                </h3>
-              </div>
-
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between py-2">
-                      <span className="text-muted-foreground">Crop Type</span>
-                      <span className="text-card-foreground">
-                        {selectedBatch.crop}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-muted-foreground">Total Weight</span>
-                      <span className="text-card-foreground">
-                        {selectedBatch.actualWeight} kg
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-2">
-                      <span className="text-muted-foreground">Price per kg</span>
-                      <span className="text-card-foreground">ZMW 8.00</span>
-                    </div>
-                  </div>
-
-                  <div className="p-6 bg-primary/5 border-2 border-primary rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Total Payable Amount
-                    </p>
-                    <p className="text-4xl text-primary mb-1">
-                      ZMW{" "}
-                      {calculatePayment(selectedBatch.actualWeight).toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Payment to {selectedBatch.farmerName}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4">
-                  <button className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-                    Approve Payment
-                  </button>
-                  <button className="px-6 py-3 border border-border rounded-lg hover:bg-muted/50 transition-colors text-card-foreground">
-                    Print Receipt
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

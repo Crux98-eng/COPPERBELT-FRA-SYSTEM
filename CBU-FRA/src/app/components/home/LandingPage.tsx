@@ -5,7 +5,7 @@ import registerImage from "@/assets/registration.png";
 import transportImage from "@/assets/transport.png";
 import shedImage from "@/assets/shed.png";
 import fraudImage from "@/assets/froud.png";
-
+import logo from '@/assets/fra-cbu-logo.png';
 export function LandingPage() {
   const solutionCards = [
     {
@@ -52,16 +52,7 @@ export function LandingPage() {
         <nav className="relative z-10 flex items-center justify-between px-8 py-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-primary"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                <polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
+              <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-xl text-white">FRA System</h1>
@@ -233,11 +224,8 @@ export function LandingPage() {
             <div>
               <h3 className="text-lg mb-4">Quick Links</h3>
               <ul className="space-y-2 text-sm">
-                <li>
-                  <Link to="/dashboard/register" className="text-background/70 hover:text-background">
-                    Farmer Registration
-                  </Link>
-                </li>
+              
+              
                 <li>
                   <Link to="/login" className="text-background/70 hover:text-background">
                     Officer Login

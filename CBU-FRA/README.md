@@ -1,505 +1,361 @@
-# CBU-FRA API Data Contracts
+# Backend API Data Contract
 
-This README documents the API data expected by the current frontend.
+This document describes the current frontend expectations for backend request/response shapes and the mock data formats used in the app.
 
-The codebase currently uses in-component mock data (no live `fetch`/`axios` calls yet), so this file defines the backend contracts needed to wire real APIs without breaking UI behavior.
+## Base API URL
 
-## 1) Project Areas Scanned
+The frontend reads the backend base URL from the environment variable:
 
-- `src/app/components/auth`
-- `src/app/components/dashboard`
-- `src/app/components/farmers`
-- `src/app/components/transport`
-- `src/app/components/shed`
-- `src/app/components/fraud`
-- `src/app/components/map`
-- `src/app/routes.tsx`
+- `VITE_API_BASE_URL`
 
-## 2) Core Conventions
+If this variable is not defined, the frontend falls back to:
 
-- Base URL (suggested): `/api`
-- IDs are strings like `F001`, `TB127`, `FR008`
-- Date strings used by UI:
-  - `YYYY-MM-DD` for records
-  - `YYYY-MM-DD HH:mm` for dispatch/arrival timestamps
-- Coordinates format:
-  - Object form: `{ "lat": number, "lng": number }`
-  - Polygon form for farm plot: `[[lat, lng], [lat, lng], ...]`
+- `https://fra-backend-vh1s.onrender.com/api`
 
-## 3) Shared Types (Frontend Expectations)
+All endpoints are requested relative to this base URL.
 
-```ts
-type FarmerStatus = "active" | "pending" | "rejected";
-type BiometricStatus = "pending" | "verified";
+## Auth endpoints
 
-type TransportStatus = "collected" | "in-transit" | "arrived";
-type ShedBatchStatus = "pending-weighing" | "weighed";
+### 1. POST `/auth/login`
 
-type FraudRiskLevel = "high" | "medium" | "low";
-type FraudAlertStatus = "under-review" | "pending" | "resolved";
+Used for password-based authentication.
 
-type LocationType = "collection" | "shed";
-```
-
-```ts
-interface GeoPoint {
-  lat: number;
-  lng: number;
-}
-```
-
-## 4) Auth APIs
-
-### `POST /api/auth/login`
-
-Used by password login screen.
-
-Request:
+Request body:
 
 ```json
 {
-  "officerIdOrNrc": "A12345",
-  "password": "secret"
+  "officerIdOrNrc": "string",
+  "password": "string"
 }
 ```
 
-Response:
+Response body expected by frontend:
 
 ```json
 {
-  "token": "jwt-token",
+  "token": "string",
   "user": {
-    "id": "OFF001",
-    "name": "Operations Officer",
-    "role": "fra_officer"
+    "id": "string",
+    "name": "string",
+    "role": "string"
   }
 }
 ```
 
-### `POST /api/auth/biometric-login`
+Notes:
 
-Used by biometric login mode.
+- The frontend stores the returned token and user data in local storage.
+- The token is later sent as a `Bearer` token in the `Authorization` header for requests requiring authentication.
 
-Request:
+### 2. POST `/auth/biometric-login`
 
-```json
+Used for biometric authentication.
+
+Request body:
+
+```json //skip it for now
 {
-  "officerIdOrNrc": "A12345",
-  "biometricSample": "base64-or-template-ref",
-  "deviceId": "scanner-01"
+  "officerIdOrNrc": "string",
+  "biometricSample": "string",
+  "deviceId": "string"
 }
 ```
 
-Response:
+Response body is the same as `/auth/login`.
+
+Notes:
+
+- The frontend currently sends placeholder biometric values from the web client:
+  - `biometricSample`: `"browser-biometric-sample"`
+  - `deviceId`: `"web-client"`
+
+## agent registration endpoint
+
+### POST `/agent`
+
+Used by the farmer registration form.
+
+Request body:
 
 ```json
 {
-  "token": "jwt-token",
-  "user": {
-    "id": "OFF001",
-    "name": "Operations Officer",
-    "role": "fra_officer"
-  }
+  "name": "string",
+  "nrc": "string",
+  "phone": "string",
+  "district": "string",
+
 }
 ```
 
-## 5) Farmer Registration + Farmer Management APIs
 
-### Registration Payload
+## Mock data structures currently used by UI pages
 
-`POST /api/farmers`
+Several UI pages are still driven by frontend mock data. The backend team should use these formats when replacing the mocks or exposing new endpoints.
 
-Request:
+### Farmer management record
+
+Used by `src/app/components/farmers/FarmerManagement.tsx`.
 
 ```json
 {
-  "name": "Joseph Mwansa",
-  "nrc": "123456/78/1",
-  "phone": "+260977123456",
-  "district": "Chipata",
-  "village": "Kamoto Village",
-  "crop": "Maize",
-  "biometricStatus": "verified",
-  "fingerprintTemplate": "base64-or-template-ref",
-  "facePhoto": "base64-or-file-url",
-  "gps": { "lat": -13.6334, "lng": 32.6503 }
+  "id": "string",
+  "name": "string",
+  "nrc": "string",
+  "location": "string",
+  "crop": "string",
+  "status": "active" | "pending" | "rejected",
+  "registered": "YYYY-MM-DD"
 }
 ```
 
-Response:
+Example:
 
 ```json
 {
   "id": "F001",
-  "status": "active"
+  "name": "Joseph Mwansa",
+  "nrc": "123456/78/1",
+  "location": "Chipata, Eastern",
+  "crop": "Maize",
+  "status": "active",
+  "registered": "2026-01-15"
 }
 ```
 
-### Farmer List
+### Fraud alert record
 
-`GET /api/farmers?search=&status=&page=&pageSize=`
-
-Expected row shape:
-
-```ts
-interface FarmerListItem {
-  id: string;
-  name: string;
-  nrc: string;
-  location: string; // e.g. "Chipata, Eastern"
-  crop: string;
-  status: FarmerStatus;
-  registered: string; // YYYY-MM-DD
-}
-```
-
-Suggested response:
+Used by `src/app/components/fraud/FraudDetection.tsx`.
 
 ```json
 {
-  "data": [
-    {
-      "id": "F001",
-      "name": "Joseph Mwansa",
-      "nrc": "123456/78/1",
-      "location": "Chipata, Eastern",
-      "crop": "Maize",
-      "status": "active",
-      "registered": "2026-01-15"
-    }
+  "id": "string",
+  "farmerId": "string",
+  "farmerName": "string",
+  "riskLevel": "high" | "medium" | "low",
+  "flags": ["string"],
+  "date": "YYYY-MM-DD",
+  "status": "under-review" | "pending" | "resolved"
+}
+```
+
+Example:
+
+```json
+{
+  "id": "FR008",
+  "farmerId": "F012",
+  "farmerName": "Simon Hachileka",
+  "riskLevel": "high",
+  "flags": [
+    "Weight variance > 15%",
+    "Duplicate NRC detected",
+    "Location mismatch"
   ],
-  "meta": {
-    "page": 1,
-    "pageSize": 10,
-    "total": 12458
+  "date": "2026-04-21",
+  "status": "under-review"
+}
+```
+
+### Transport batch record
+
+Used by `src/app/components/transport/TransportLogistics.tsx`.
+
+```json
+{
+  "id": "string",
+  "farmerId": "string",
+  "farmerName": "string",
+  "crop": "string",
+  "declaredBags": number,
+  "status": "collected" | "in-transit" | "arrived",
+  "collectionPoint": "string",
+  "shed": "string",
+  "agent": "string",
+  "dispatchTime": "YYYY-MM-DD HH:mm",
+  "arrivalTime": "YYYY-MM-DD HH:mm" | null,
+  "gps": {
+    "lat": number,
+    "lng": number
   }
 }
 ```
 
-### Farmer Detail
-
-`GET /api/farmers/:id`
-
-```ts
-interface TransportHistoryItem {
-  id: string;        // e.g. TB001
-  date: string;      // YYYY-MM-DD
-  bags: number;
-  status: string;    // currently displayed as text, e.g. "completed"
-  shed: string;
-}
-
-interface ProcurementHistoryItem {
-  date: string;          // YYYY-MM-DD
-  declaredBags: number;
-  actualWeight: string;  // currently UI-ready text, e.g. "6,000 kg"
-  variance: string;      // currently UI-ready text, e.g. "+2.3%"
-  payment: string;       // currently UI-ready text, e.g. "ZMW 48,000"
-  status: string;        // e.g. "paid"
-}
-
-interface FarmerDetail {
-  id: string;
-  name: string;
-  nrc: string;
-  phone: string;
-  district: string;
-  province: string;
-  village: string;
-  crop: string;
-  status: FarmerStatus;
-  registered: string;        // YYYY-MM-DD
-  biometricStatus: BiometricStatus;
-  gpsCoordinates: string;    // currently rendered as text in details panel
-  transportHistory: TransportHistoryItem[];
-  procurementHistory: ProcurementHistoryItem[];
-}
-```
-
-Optional farm plot endpoint (used by `mapPlot.tsx` placeholder map):
-
-`GET /api/farmers/:id/farm-plot`
-
-```json
-{
-  "center": [-12.346, 28.456],
-  "polygon": [
-    [-12.345, 28.456],
-    [-12.346, 28.457],
-    [-12.347, 28.455],
-    [-12.346, 28.454]
-  ]
-}
-```
-
-## 6) Transport Logistics APIs
-
-### Batch List / Detail
-
-`GET /api/transport/batches`
-
-`GET /api/transport/batches/:id`
-
-```ts
-interface TransportBatch {
-  id: string;                    // TB127
-  farmerId: string;              // F001
-  farmerName: string;
-  crop: string;
-  declaredBags: number;
-  status: TransportStatus;
-  collectionPoint: string;
-  shed: string;
-  agent: string;
-  dispatchTime: string;          // YYYY-MM-DD HH:mm
-  arrivalTime: string | null;    // null when not arrived
-  gps: GeoPoint;
-}
-```
-
-Example response:
-
-```json
-{
-  "data": [
-    {
-      "id": "TB127",
-      "farmerId": "F001",
-      "farmerName": "Joseph Mwansa",
-      "crop": "Maize",
-      "declaredBags": 120,
-      "status": "arrived",
-      "collectionPoint": "Chipata Collection Center",
-      "shed": "Chipata Central Shed",
-      "agent": "Michael Phiri",
-      "dispatchTime": "2026-04-21 08:30",
-      "arrivalTime": "2026-04-21 14:15",
-      "gps": { "lat": -13.6334, "lng": 32.6503 }
-    }
-  ]
-}
-```
-
-## 7) Shed Procurement APIs
-
-### Arrived Batches
-
-`GET /api/shed/arrived-batches`
-
-```ts
-interface ShedBatch {
-  id: string;
-  farmerId: string;
-  farmerName: string;
-  crop: string;
-  declaredBags: number;
-  arrivalTime: string;           // YYYY-MM-DD HH:mm
-  status: ShedBatchStatus;
-  actualWeight: number | null;   // kg
-  variance: number | null;       // percentage, e.g. 2.3
-}
-```
-
-### Submit Weighing
-
-`POST /api/shed/batches/:id/weigh`
-
-Request:
-
-```json
-{
-  "actualWeight": 6000
-}
-```
-
-Response:
+Example:
 
 ```json
 {
   "id": "TB127",
-  "status": "weighed",
-  "declaredBags": 120,
-  "actualWeight": 6000,
-  "variance": 0
-}
-```
-
-### Payment Generation
-
-`POST /api/payments`
-
-Request:
-
-```json
-{
-  "batchId": "TB127",
   "farmerId": "F001",
-  "weightKg": 6000,
-  "pricePerKg": 8
+  "farmerName": "Joseph Mwansa",
+  "crop": "Maize",
+  "declaredBags": 120,
+  "status": "arrived",
+  "collectionPoint": "Chipata Collection Center",
+  "shed": "Chipata Central Shed",
+  "agent": "Michael Phiri",
+  "dispatchTime": "2026-04-21 08:30",
+  "arrivalTime": "2026-04-21 14:15",
+  "gps": { "lat": -13.6334, "lng": 32.6503 }
 }
 ```
 
-Response:
+### Shed procurement batch record
+
+Used by `src/app/components/shed/ShedProcurement.tsx`.
 
 ```json
 {
-  "paymentId": "PAY-001",
-  "amount": 48000,
-  "currency": "ZMW",
-  "status": "approved"
+  "id": "string",
+  "farmerId": "string",
+  "farmerName": "string",
+  "crop": "string",
+  "declaredBags": number,
+  "arrivalTime": "YYYY-MM-DD HH:mm",
+  "status": "pending-weighing" | "weighed",
+  "actualWeight": number | null,
+  "variance": number | null
 }
 ```
 
-## 8) Fraud Detection APIs
-
-### Fraud Alerts
-
-`GET /api/fraud/alerts?riskLevel=high|medium|low`
-
-```ts
-interface FraudAlert {
-  id: string;                    // FR008
-  farmerId: string;
-  farmerName: string;
-  riskLevel: FraudRiskLevel;
-  flags: string[];
-  date: string;                  // YYYY-MM-DD
-  status: FraudAlertStatus;
-}
-```
-
-### Fraud Stats
-
-`GET /api/fraud/stats`
-
-```ts
-interface FraudRiskStats {
-  high: number;
-  medium: number;
-  low: number;
-  total: number;
-}
-```
-
-### Update Investigation State
-
-`PATCH /api/fraud/alerts/:id`
-
-Request:
+Example:
 
 ```json
 {
-  "status": "resolved"
+  "id": "TB127",
+  "farmerId": "F001",
+  "farmerName": "Joseph Mwansa",
+  "crop": "Maize",
+  "declaredBags": 120,
+  "arrivalTime": "2026-04-21 14:15",
+  "status": "pending-weighing",
+  "actualWeight": null,
+  "variance": null
 }
 ```
 
-## 9) Logistics Map APIs
+### Logistics map data formats
 
-### Locations
+Used by `src/app/components/map/LogisticsMap.tsx`.
 
-`GET /api/logistics/locations?type=collection|shed`
-
-```ts
-interface BaseLocation {
-  id: number;
-  name: string;
-  type: LocationType;
-  district: string;
-  coordinates: GeoPoint;
-}
-
-interface CollectionLocation extends BaseLocation {
-  type: "collection";
-  farmers: number;
-  activeBatches: number;
-}
-
-interface ShedLocation extends BaseLocation {
-  type: "shed";
-  capacity: string; // currently text in UI, e.g. "25,000 bags"
-  current: string;  // currently text in UI, e.g. "18,450 bags"
-}
-
-type LogisticsLocation = CollectionLocation | ShedLocation;
-```
-
-### Routes
-
-`GET /api/logistics/routes`
-
-```ts
-interface LogisticsRoute {
-  id: number;
-  from: string;
-  to: string;
-  batches: number;
-  status: string; // currently "active"
-}
-```
-
-## 10) Dashboard APIs
-
-The dashboard currently expects these datasets:
-
-```ts
-interface FarmersByRegionItem {
-  region: string;
-  farmers: number;
-  growth: number; // percent
-}
-
-interface CropDistributionItem {
-  name: string;
-  value: number;
-  color: string; // hex
-}
-
-interface TransportSuccessItem {
-  month: string;   // Oct, Nov, ...
-  success: number; // percent
-  target: number;  // percent
-}
-
-interface ProcurementVolumeItem {
-  month: string;
-  bags: number;
-  revenue: number; // thousands of ZMW in current chart label
-}
-
-interface RecentActivityItem {
-  id: number;
-  action: string;
-  time: string; // e.g. "8 minutes ago"
-  type: "transport" | "alert" | "payment" | "registration";
-}
-```
-
-Suggested endpoint shape:
-
-`GET /api/dashboard`
+#### Location object
 
 ```json
 {
-  "summary": {
-    "totalFarmers": 12458,
-    "newFarmersThisMonth": 342,
-    "transportBatches": 127,
-    "inTransitBatches": 18,
-    "pendingArrivals": 43,
-    "fraudAlerts": 8,
-    "highPriorityFraudCases": 2
-  },
-  "farmersByRegion": [],
-  "cropDistribution": [],
-  "transportSuccess": [],
-  "procurementVolume": [],
-  "recentActivity": []
+  "id": "string",
+  "name": "string",
+  "city": "string",
+  "type": "collection" | "shed",
+  "coordinates": {
+    "lat": number,
+    "lng": number
+  }
 }
 ```
 
-## 11) Notes for Backend Integration
+Example:
 
-- The frontend currently mixes raw numeric values and pre-formatted strings (for example `payment` and `actualWeight` in farmer procurement history). Keeping API responses consistent will reduce UI cleanup work.
-- Once real APIs are added, consider centralizing types in a shared file like `src/app/types/api.ts`.
-- If you normalize all numeric/currency/date fields in API responses, update components to format on the frontend rather than storing formatted text.
+```json
+{
+  "id": "lusaka_cc",
+  "name": "Lusaka Collection Center",
+  "city": "Lusaka",
+  "type": "collection",
+  "coordinates": { "lat": -15.4167, "lng": 28.2833 }
+}
+```
 
+#### Route object
+
+```json
+{
+  "id": number,
+  "fromId": "string",
+  "toId": "string"
+}
+```
+
+Example:
+
+```json
+{
+  "id": 1,
+  "fromId": "lusaka_cc",
+  "toId": "lusaka_shed"
+}
+```
+
+#### Truck object
+
+```json
+{
+  "id": "string",
+  "label": "string",
+  "routeId": number,
+  "position": [number, number],
+  "speed": number,
+  "status": "in_transit" | "at_shed" | "loading" | "delayed",
+  "cargo": "string",
+  "driver": "string",
+  "eta": "string",
+  "arrived": boolean,
+  "progressPct": number,
+  "startPosition": [number, number]
+}
+```
+
+Example:
+
+```json
+{
+  "id": "T1",
+  "label": "ZMB-001",
+  "routeId": 1,
+  "position": [28.2833, -15.4167],
+  "speed": 60,
+  "status": "in_transit",
+  "cargo": "Soya beans",
+  "driver": "Chanda Mwamba",
+  "eta": "—",
+  "arrived": false,
+  "progressPct": 35,
+  "startPosition": [28.2833, -15.4167]
+}
+```
+
+## Authentication header format
+
+For protected requests, the frontend sends:
+
+```
+Authorization: Bearer <token>
+```
+
+## Important assumptions
+
+- The frontend uses JSON payloads exclusively.
+- `Content-Type: application/json` is always set.
+- Any non-2xx response is treated as an error.
+- If the backend returns JSON with a `message` field, the frontend will use it for error display.
+
+## Current backend routes wired in the frontend
+
+- `POST /auth/login`
+- `POST /auth/biometric-login`
+- `POST /farmers`
+
+## Backend endpoints recommended for future integration
+
+These pages are currently using frontend mock objects and should be considered when adding API support:
+
+- Farmer management data list
+- Fraud alert list and detail
+- Transport batches / live truck tracking
+- Logistics map locations, routes, and trucks
+- Shed procurement batch details and weighing results
+
+## Additional notes for backend team
+
+- The frontend is built as a token-based authenticated app.
+- `user` must include `id`, `name`, and `role`.
+- Ensure CORS allows the frontend origin.
+- Any future API should preserve the exact mock field names and enum values shown above unless the frontend is updated.
