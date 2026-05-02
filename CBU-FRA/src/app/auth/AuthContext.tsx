@@ -3,15 +3,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiRequest } from "@/app/lib/api";
 import type {
-  AuthSession,
   BiometricLoginCredentials,
   LoginCredentials,
+  TokenResponse,
 } from "@/app/types/auth";
-import {
-  clearStoredSession,
-  getStoredSession,
-  storeSession,
-} from "./authStorage";
+
+interface AuthSession {
+  token: string;
+  refresh_token?: string;
+  user: {
+    id: string;
+    name: string;
+    role: string;
+  };
+}
 
 interface AuthContextValue {
   session: AuthSession | null;
@@ -30,8 +35,36 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const SESSION_QUERY_KEY = ["auth", "session"] as const;
+  const SESSION_QUERY_KEY = ["auth", "session"] as const;
+  
+  // Simple session storage functions
+  const SESSION_KEY = 'fra_session';
 
+  function getStoredSession(): AuthSession | null {
+    try {
+      const session = localStorage.getItem(SESSION_KEY);
+      return session ? JSON.parse(session) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function storeSession(session: AuthSession) {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    } catch (error) {
+      console.error('Failed to store session:', error);
+    }
+  }
+
+  function clearStoredSession() {
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch (error) {
+      console.error('Failed to clear session:', error);
+    }
+  }
+  
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
 
@@ -45,19 +78,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storeSession(session);
     queryClient.setQueryData(SESSION_QUERY_KEY, session);
   };
-
+ 
   const loginMutation = useMutation({
-    mutationFn: (credentials: LoginCredentials) =>
-      apiRequest<AuthSession>("/auth/login", {
+    mutationFn: async (credentials: LoginCredentials) => {
+      const response = await apiRequest<TokenResponse>(`/auth/token`, {
         method: "POST",
         body: credentials,
-      }),
+        isFormData: true,
+      });
+      
+      // Transform token response to session format
+      const session = {
+        token: response.access_token,
+        refresh_token: response.refresh_token,
+        user: {
+          id: "",
+          name: credentials.username,
+          role: "USER", // Default role - backend will validate permissions
+        },
+      };
+      return session;
+    },
     onSuccess: setSession,
   });
 
   const biometricLoginMutation = useMutation({
     mutationFn: (credentials: BiometricLoginCredentials) =>
-      apiRequest<AuthSession>("/auth/biometric-login", {
+      apiRequest<AuthSession>(`/auth/biometric-login`, {
         method: "POST",
         body: credentials,
       }),
@@ -72,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const session = sessionQuery.data ?? null;
 
+  
   return (
     <AuthContext.Provider
       value={{

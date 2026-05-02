@@ -33,5 +33,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://fra-backend-vh1s.onrender.com',
+        changeOrigin: true,
+        secure: true,
+        pathRewrite: {
+          '^/api': '/api',
+        },
+      },
+    },
+  },
   assetsInclude: ['**/*.svg', '**/*.csv'],
 });

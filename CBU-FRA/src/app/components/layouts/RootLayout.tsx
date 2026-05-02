@@ -8,6 +8,7 @@ import {
   Map,
   LogOut,
   Settings,
+  UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthContext";
 import logo from '@/assets/fra-cbu-logo.png';
@@ -29,6 +30,7 @@ export function RootLayout() {
     { path: "/dashboard/shed", label: "Shed Procurement", icon: Warehouse },
     { path: "/dashboard/fraud", label: "Fraud Detection", icon: AlertTriangle },
     { path: "/dashboard/map", label: "Logistics Map", icon: Map },
+    { path: "/dashboard/agents", label: "Agents", icon: UserCheck },
     { path: "/dashboard/settings", label: "Settings", icon: Settings },
   ];
 

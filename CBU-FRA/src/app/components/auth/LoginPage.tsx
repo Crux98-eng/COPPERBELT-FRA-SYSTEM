@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { use, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { User, Lock, Fingerprint } from "lucide-react";
 import backgroundImage from "@/assets/farmbg.jpg";
@@ -12,7 +12,7 @@ type LoginLocationState = {
 
 export function LoginPage() {
   const [useBiometric, setUseBiometric] = useState(false);
-  const [officerIdOrNrc, setOfficerIdOrNrc] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -46,7 +46,8 @@ export function LoginPage() {
     setError("");
 
     try {
-      await login({ officerIdOrNrc, password });
+    
+      await login({  username, password });
       navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in");
@@ -58,7 +59,7 @@ export function LoginPage() {
 
     try {
       await biometricLogin({
-        officerIdOrNrc,
+        username,
         biometricSample: "browser-biometric-sample",
         deviceId: "web-client",
       });
@@ -115,15 +116,15 @@ export function LoginPage() {
               <form className="space-y-4" onSubmit={handlePasswordLogin}>
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
-                    Officer ID / NRC
+                    Username
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
                       type="text"
-                      placeholder="Enter your ID"
-                      value={officerIdOrNrc}
-                      onChange={(event) => setOfficerIdOrNrc(event.target.value)}
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
                       required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
@@ -154,9 +155,9 @@ export function LoginPage() {
                 )}
 
                 <button
-                  // type="submit"
-                  // disabled={isPasswordPending}
-                  onClick={()=>{navigate('/dashboard')}}
+                  type="submit"
+                  disabled={isPasswordPending}
+                
                   className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors block text-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isPasswordPending ? "Signing in..." : "Sign In"}
@@ -166,15 +167,15 @@ export function LoginPage() {
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
-                    Officer ID / NRC
+                    Username
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
                       type="text"
-                      placeholder="Enter your ID"
-                      value={officerIdOrNrc}
-                      onChange={(event) => setOfficerIdOrNrc(event.target.value)}
+                      placeholder="Enter your username"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
                       required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
@@ -198,9 +199,8 @@ export function LoginPage() {
 
                 <button
                   type="button"
-                  // onClick={handleBiometricLogin}
-                  onClick={()=>{navigate('/dashboard')}}
-                  disabled={isBiometricPending || !officerIdOrNrc}
+                  onClick={handleBiometricLogin}
+                  disabled={isBiometricPending || !username}
                   className="w-full bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors block text-center disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isBiometricPending ? "Authenticating..." : "Authenticate"}

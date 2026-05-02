@@ -10,12 +10,18 @@ export interface AuthSession {
 }
 
 export interface LoginCredentials {
-  officerIdOrNrc: string;
+  username: string;
   password: string;
 }
 
 export interface BiometricLoginCredentials {
-  officerIdOrNrc: string;
+  username: string;
   biometricSample: string;
   deviceId: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
 }

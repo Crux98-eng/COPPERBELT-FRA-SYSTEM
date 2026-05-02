@@ -1,7 +1,8 @@
 ﻿import React, { useState } from "react";
 import { Link } from "react-router";
+import { apiRequest } from "@/app/lib/api";
 
-type Tab = "general" |  "integrations" 
+type Tab = "general" | "integrations" | "add_farmer" 
 interface ToggleProps {
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -393,6 +394,154 @@ const IntegrationsPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
   );
 };
 
+interface FarmerFormData {
+  username: string;
+  password: string;
+  role: "FARMER";
+  district: string;
+}
+
+const AddFarmerPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
+  const [formData, setFormData] = useState<FarmerFormData>({
+    username: "",
+    password: "",
+    role: "FARMER",
+    district: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+
+  const getStoredToken = () => {
+    try {
+      const session = localStorage.getItem('fra_session');
+      if (session) {
+        const parsed = JSON.parse(session);
+        return parsed.token || null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    try {
+      const token = getStoredToken();
+      if (!token) {
+        setSubmitMessage("Error: No admin token found. Please login again.");
+        return;
+      }
+
+      const data = await apiRequest("/auth/register", {
+        method: "POST",
+        token,
+        body: formData,
+      });
+
+      setSubmitMessage("Farmer created successfully!");
+      setFormData({ username: "", password: "", role: "FARMER", district: "" });
+      dirty();
+    } catch (error) {
+      setSubmitMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const updateField = (field: keyof FarmerFormData) => (value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    dirty();
+  };
+
+  return (
+    <>
+      <SectionTitle icon="" title="Add Farmer" subtitle="Create a new farmer account with credentials." />
+      <Card>
+        <form onSubmit={handleSubmit}>
+          <InputField 
+            label="Username" 
+            value={formData.username} 
+            onChange={updateField('username')} 
+            placeholder="Enter username" 
+            hint="Unique identifier for the farmer" 
+          />
+          <InputField 
+            label="Password" 
+            value={formData.password} 
+            onChange={updateField('password')} 
+            type="password" 
+            placeholder="Enter password" 
+            hint="Secure password for farmer login" 
+          />
+          <InputField 
+            label="District" 
+            value={formData.district} 
+            onChange={updateField('district')} 
+            placeholder="Enter district" 
+            hint="District where the farmer is located" 
+          />
+          
+          {submitMessage && (
+            <div style={{
+              padding: "12px",
+              borderRadius: "8px",
+              marginBottom: "20px",
+              backgroundColor: submitMessage.includes("Error") ? "#fee2e2" : "#dcfce7",
+              color: submitMessage.includes("Error") ? "#dc2626" : "#16a34a",
+              fontSize: "14px",
+              border: `1px solid ${submitMessage.includes("Error") ? "#fca5a5" : "#86efac"}`,
+            }}>
+              {submitMessage}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              type="submit"
+              disabled={isSubmitting || !formData.username || !formData.password || !formData.district}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "none",
+                background: isSubmitting || !formData.username || !formData.password || !formData.district ? "#94a3b8" : "var(--primary, #1B5E20)",
+                color: "#fff",
+                cursor: isSubmitting || !formData.username || !formData.password || !formData.district ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: "600",
+              }}
+            >
+              {isSubmitting ? "Creating..." : "Create Farmer"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ username: "", password: "", role: "FARMER", district: "" });
+                setSubmitMessage("");
+              }}
+              style={{
+                padding: "10px 20px",
+                borderRadius: "8px",
+                border: "1px solid #e0e0e0",
+                background: "#fff",
+                color: "#374151",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </form>
+      </Card>
+    </>
+  );
+};
+
 const SecurityPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
   const [mfa, setMfa]               = useState(true);
   const [sessionTimeout, setTimeout] = useState("8h");
@@ -438,6 +587,7 @@ const SecurityPanel: React.FC<{ dirty: () => void }> = ({ dirty }) => {
 const TABS: { id: Tab; label: string }[] = [
   { id: "general", label: "General" },
   { id: "integrations", label: "Integrations" },
+  { id: "add_farmer", label: "Add Farmer" },
 ];
 
 const Settings: React.FC = () => {
@@ -508,24 +658,22 @@ const Settings: React.FC = () => {
           >
             Add Agent
           </Link>
-          <Link
-            to="/login"
+          <button
+            onClick={() => setActiveTab("add_farmer")}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
               padding: "10px 14px",
               borderRadius: 9,
-              border: "1px solid #b91c1c",
-              background: "#fff",
-              color: "#b91c1c",
-              textDecoration: "none",
+              border: "1px solid #1B5E20",
+              background: activeTab === "add_farmer" ? "#1B5E20" : "#fff",
+              color: activeTab === "add_farmer" ? "#fff" : "#1B5E20",
+              cursor: "pointer",
               fontSize: 13,
               fontWeight: 600,
             }}
           >
-            Logout
-          </Link>
+            Add Farmer
+          </button>
+       
         </div>
 
         <nav style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
@@ -555,6 +703,7 @@ const Settings: React.FC = () => {
         <div style={{ maxWidth: 820 }}>
           {activeTab === "general"       && <GeneralPanel       dirty={markDirty} />}
           {activeTab === "integrations"  && <IntegrationsPanel  dirty={markDirty} />}
+          {activeTab === "add_farmer"    && <AddFarmerPanel    dirty={markDirty} />}
           <SaveBar dirty={isDirty} onSave={handleSave} onDiscard={handleDiscard} />
         </div>
       </div>

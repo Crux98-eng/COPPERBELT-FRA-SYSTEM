@@ -1,4 +1,5 @@
 import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
   Bar,
@@ -14,6 +15,22 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import FarmMap from "./mapPlot";
+import { useAuth } from "@/app/auth/AuthContext";
+import { apiRequest } from "@/app/lib/api";
+import { Skeleton } from "@/app/components/ui/skeleton";
+
+interface DashboardSummary {
+  total_farmers?: number;
+  active_farmers?: number;
+  total_batches?: number;
+  active_batches?: number;
+  fraud_alerts?: number;
+  high_priority_fraud?: number;
+  total_payments?: number;
+  pending_payments?: number;
+  total_farms?: number;
+  [key: string]: unknown;
+}
 
 const farmersByRegion = [
   { region: "Lusaka", farmers: 2340, growth: 12 },
@@ -84,9 +101,24 @@ const recentActivity = [
     type: "transport",
   },
 ];
-const url = 'https://fra-backend-vh1s.onrender.com/api/web/admin/users';
 
 export function Dashboard() {
+  const { token } = useAuth();
+
+  const { data: dashboardSummary, isLoading } = useQuery({
+    queryKey: ["dashboard", "summary"],
+    queryFn: () =>
+      apiRequest<DashboardSummary>("/dashboard/summary", {
+        token,
+      }),
+  });
+  console.log("data is ==>",dashboardSummary)
+
+  const summary = dashboardSummary || {};
+  const totalFarmers = summary.total_farmers ?? 12458;
+  const activeBatches = summary.active_batches ?? 18;
+  const fraudAlerts = summary.fraud_alerts ?? 8;
+  const highPriorityFraud = summary.high_priority_fraud ?? 2;
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-[green]/30">
@@ -140,10 +172,20 @@ export function Dashboard() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Total Farmers</p>
-                <p className="text-3xl text-foreground tracking-tight">12,458</p>
-                <p className="text-xs text-muted-foreground">
-                  +342 registered this month
-                </p>
+                <div className="text-3xl text-foreground tracking-tight">
+                  {isLoading ? (
+                    <Skeleton className="w-20 h-8" />
+                  ) : (
+                    totalFarmers.toLocaleString()
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {isLoading ? (
+                    <Skeleton className="w-40 h-4" />
+                  ) : (
+                    "+342 registered this month"
+                  )}
+                </div>
               </div>
             </div>
             <div className="h-1 bg-gradient-to-r from-secondary/20 to-secondary"></div>
@@ -174,10 +216,20 @@ export function Dashboard() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Transport Batches</p>
-                <p className="text-3xl text-foreground tracking-tight">127</p>
-                <p className="text-xs text-muted-foreground">
-                  18 currently in transit
-                </p>
+                <div className="text-3xl text-foreground tracking-tight">
+                  {isLoading ? (
+                    <Skeleton className="w-20 h-8" />
+                  ) : (
+                    "127"
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {isLoading ? (
+                    <Skeleton className="w-40 h-4" />
+                  ) : (
+                    `${activeBatches} currently in transit`
+                  )}
+                </div>
               </div>
             </div>
             <div className="h-1 bg-gradient-to-r from-primary/20 to-primary"></div>
@@ -241,10 +293,20 @@ export function Dashboard() {
               </div>
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">Fraud Alerts</p>
-                <p className="text-3xl text-foreground tracking-tight">8</p>
-                <p className="text-xs text-muted-foreground">
-                  2 high priority cases
-                </p>
+                <div className="text-3xl text-foreground tracking-tight">
+                  {isLoading ? (
+                    <Skeleton className="w-20 h-8" />
+                  ) : (
+                    fraudAlerts
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {isLoading ? (
+                    <Skeleton className="w-40 h-4" />
+                  ) : (
+                    `${highPriorityFraud} high priority cases`
+                  )}
+                </div>
               </div>
             </div>
             <div className="h-1 bg-gradient-to-r from-destructive/20 to-destructive"></div>

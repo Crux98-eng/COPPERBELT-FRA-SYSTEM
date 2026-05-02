@@ -114,14 +114,14 @@ export function FraudDetection() {
     queryKey: ["fraud", "review-queue", "pending"],
     queryFn: async () =>
       apiRequest<FraudQueueResponse>(
-        "/v1/fraud/review-queue?status=PENDING&limit=50",
+        "/web/fraud/review-queue?status=PENDING&limit=50",
         { token },
       ),
     enabled: Boolean(token),
     retry: false,
   });
 
-  const queueEntries = queueQuery.data?.queue_entries ?? sampleQueueEntries;
+  const queueEntries = queueQuery.data?.queue_entries ?? [];
 
   useEffect(() => {
     if (!selectedQueueId && queueEntries.length > 0) {
@@ -135,7 +135,7 @@ export function FraudDetection() {
     queryKey: ["fraud", "flag", selectedEntry?.fraud_flag_id],
     queryFn: async () =>
       apiRequest<FraudFlagDetail>(
-        `/v1/fraud/flags/${selectedEntry?.fraud_flag_id}`,
+        `/web/fraud/flags/${selectedEntry?.fraud_flag_id}`,
         { token },
       ),
     enabled: Boolean(token && selectedEntry?.fraud_flag_id),
@@ -146,7 +146,7 @@ export function FraudDetection() {
     queryKey: ["fraud", "score", selectedEntry?.fraud_score_id],
     queryFn: async () =>
       apiRequest<FraudScoreDetail>(
-        `/v1/fraud/scores/${selectedEntry?.fraud_score_id}`,
+        `/web/fraud/scores/${selectedEntry?.fraud_score_id}`,
         { token },
       ),
     enabled: Boolean(token && selectedEntry?.fraud_score_id),
@@ -159,13 +159,13 @@ export function FraudDetection() {
       status: "APPROVED" | "REJECTED" | "NEEDS_MORE_INFO";
       review_notes: string;
     }) =>
-      apiRequest(`/v1/fraud/review-queue/${payload.queueId}/decision`, {
+      apiRequest(`/web/fraud/review-queue/${payload.queueId}/decision`, {
         method: "PUT",
         token,
         body: payload,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries(["fraud", "review-queue", "pending"]);
+      queryClient.invalidateQueries({ queryKey: ["fraud", "review-queue", "pending"] });
       setReviewNotes("");
     },
   });
@@ -534,10 +534,10 @@ export function FraudDetection() {
                         <button
                           type="button"
                           onClick={handleDecisionSubmit}
-                          disabled={reviewMutation.isLoading || !selectedEntry}
+                          disabled={reviewMutation.isPending || !selectedEntry}
                           className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {reviewMutation.isLoading ? "Submitting..." : "Submit Decision"}
+                          {reviewMutation.isPending ? "Submitting..." : "Submit Decision"}
                         </button>
                         <button
                           type="button"

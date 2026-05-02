@@ -5,56 +5,43 @@ import { ArrowBigLeft, Phone, User } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthContext";
 import { apiRequest } from "@/app/lib/api";
 
-interface FarmerRegistrationForm {
-  name: string;
-  nrc: string;
-  phone: string;
+interface AgentRegistrationForm {
+  username: string;
+  password: string;
   district: string;
-  crop: string;
+  phone_number: string;
 }
 
 export function RegistrationPage() {
-  const [biometricStatus] = useState<"pending" | "verified">("verified");
-  const [gpsStatus] = useState<"idle" | "capturing" | "captured">("captured");
-  const [form, setForm] = useState<FarmerRegistrationForm>({
-    name: "",
-    nrc: "",
-    phone: "",
+  const [form, setForm] = useState<AgentRegistrationForm>({
+    username: "",
+    password: "",
     district: "",
-    crop: "",
+    phone_number: "",
   });
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { token } = useAuth();
 
   const registrationMutation = useMutation({
-    mutationFn: (payload: FarmerRegistrationForm) =>
-      apiRequest<{ id: string; status: string }>("/farmers", {
+    mutationFn: (payload: AgentRegistrationForm) =>
+      apiRequest<{ id: string; status: string }>("/auth/agents", {
         method: "POST",
         token,
         body: {
-          name: payload.name,
-          nrc: payload.nrc,
-          phone: payload.phone,
+          username: payload.username,
+          password: payload.password,
           district: payload.district,
-          village: "",
-          crop: payload.crop,
-          biometricStatus,
-          fingerprintTemplate: "",
-          facePhoto: "",
-          gps: {
-            lat: -12.9587,
-            lng: 28.6366,
-          },
+          phone_number: payload.phone_number,
         },
       }),
     onSuccess: () => {
-      navigate("/dashboard/farmers");
+      navigate("/dashboard");
     },
   });
 
   const updateField =
-    (field: keyof FarmerRegistrationForm) =>
+    (field: keyof AgentRegistrationForm) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       setForm((current) => ({ ...current, [field]: event.target.value }));
     };
@@ -63,10 +50,15 @@ export function RegistrationPage() {
     event.preventDefault();
     setError("");
 
+    if (!token) {
+      setError("Admin token is required to register an auth agent.");
+      return;
+    }
+
     try {
       await registrationMutation.mutateAsync(form);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to register farmer");
+      setError(err instanceof Error ? err.message : "Unable to register auth agent");
     }
   };
 
@@ -80,9 +72,9 @@ export function RegistrationPage() {
       <div className="max-w-4xl mx-auto">
         <div className="bg-card rounded-lg shadow-lg border border-border overflow-hidden">
           <div className="bg-primary text-primary-foreground p-6">
-            <h1 className="text-2xl mb-1">Farmer Registration</h1>
+            <h1 className="text-2xl mb-1">Auth Agent Registration</h1>
             <p className="text-primary-foreground/80 text-sm">
-              Food Reserve Agency - Farmer Input Support Programme
+              Food Reserve Agency - Admin agent onboarding
             </p>
           </div>
 
@@ -91,15 +83,15 @@ export function RegistrationPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
-                    Full Name
+                    Username
                   </label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
                       type="text"
-                      placeholder="Enter full name"
-                      value={form.name}
-                      onChange={updateField("name")}
+                      placeholder="Enter username"
+                      value={form.username}
+                      onChange={updateField("username")}
                       required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
@@ -108,13 +100,13 @@ export function RegistrationPage() {
 
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
-                    NRC Number
+                    Password
                   </label>
                   <input
-                    type="text"
-                    placeholder="123456/78/9"
-                    value={form.nrc}
-                    onChange={updateField("nrc")}
+                    type="password"
+                    placeholder="Enter password"
+                    value={form.password}
+                    onChange={updateField("password")}
                     required
                     className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                   />
@@ -129,14 +121,13 @@ export function RegistrationPage() {
                     <input
                       type="tel"
                       placeholder="+260 xxx xxx xxx"
-                      value={form.phone}
-                      onChange={updateField("phone")}
+                      value={form.phone_number}
+                      onChange={updateField("phone_number")}
                       required
                       className="w-full pl-10 pr-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
-
 
                 <div>
                   <label className="block text-sm mb-2 text-card-foreground">
@@ -155,26 +146,6 @@ export function RegistrationPage() {
                     <option>Livingstone</option>
                     <option>Mongu</option>
                     <option>Kasama</option>
-                  </select>
-                </div>
-
-
-                <div>
-                  <label className="block text-sm mb-2 text-card-foreground">
-                    Primary Crop
-                  </label>
-                  <select
-                    value={form.crop}
-                    onChange={updateField("crop")}
-                    required
-                    className="w-full px-4 py-3 border border-border rounded-md bg-input-background focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="">Select Crop Type</option>
-                    <option>Maize</option>
-                    <option>Groundnuts</option>
-                    <option>Soya Beans</option>
-                    <option>Cotton</option>
-                    <option>Sunflower</option>
                   </select>
                 </div>
               </div>
@@ -197,11 +168,7 @@ export function RegistrationPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={
-                    registrationMutation.isPending ||
-                    biometricStatus !== "verified" ||
-                    gpsStatus !== "captured"
-                  }
+                  disabled={registrationMutation.isPending}
                   className="flex-1 bg-primary text-primary-foreground py-3 rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {registrationMutation.isPending
