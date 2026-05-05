@@ -105,6 +105,7 @@ export function FarmerManagement() {
 
   const farmers = farmersQuery.data?.data.farmers ?? [];
   const total = farmersQuery.data?.data.total ?? 0;
+  console.log("total==",farmers.length)
 
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
@@ -131,7 +132,7 @@ export function FarmerManagement() {
   ========================= */
 
   return (
-    <div className="p-6">
+    <div className="p-6 h-screen bg-[green]/30">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -194,7 +195,7 @@ export function FarmerManagement() {
         )}
 
         {/* TABLE */}
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto bg-[green]/6">
           <table className="w-full">
             <thead>
               <tr>
@@ -270,6 +271,7 @@ export function FarmerManagement() {
 
           <div className="flex gap-2">
             <button
+              className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/70"
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
             >
@@ -281,6 +283,7 @@ export function FarmerManagement() {
             </span>
 
             <button
+             className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/70"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
             >

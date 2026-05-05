@@ -16,6 +16,7 @@ import FarmMap from "../dashboard/mapPlot";
 import { useAuth } from "@/app/auth/AuthContext";
 import { ApiError, apiRequest } from "@/app/lib/api";
 import { Skeleton } from "@/app/components/ui/skeleton";
+// import { o } from "node_modules/react-router/dist/development/index-react-server-client-MKTlCGL3.mjs";
 
 /* =========================
    TYPES (MATCH API)
@@ -79,6 +80,11 @@ interface ProcurementRecord {
   payment: string;
   status: string;
 }
+interface FarmerApiDeleteResponse {
+  status: string;
+  message: string;
+  
+}
 
 export function FarmerDetail() {
   const { id } = useParams();
@@ -111,7 +117,25 @@ export function FarmerDetail() {
       });
     },
   });
+  /* =========================
+     delete farmer data
+  ========================= */
 
+  const farmsQueryDelete = useQuery({
+    queryKey: ["farmer", id],
+    enabled: Boolean(id && token),
+    queryFn: async () => {
+      return apiRequest<FarmerApiDeleteResponse>(`/web/farmers/${id}`, {
+        method: "DELETE",
+        token
+      });
+      
+    },
+    
+   
+  });
+  
+ 
   /* =========================
      MOCK DATA FOR HISTORY
   ========================= */
@@ -165,7 +189,8 @@ export function FarmerDetail() {
 
 
   const farmer = farmerQuery.data;
-  console.log(farmer?.data?.[0]?.phone_number);
+  // console.log("data length==",farmer?.data?.length)
+  // console.log(farmer?.data?.[0]?.phone_number);
   const farms = farmsQuery.data?.data || [];
   const primaryFarm = farms[0]; // Use first farm as primary
 
@@ -178,7 +203,7 @@ export function FarmerDetail() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="p-6 h-screen bg-[green]/30">
         <div className="mb-6">
           <Skeleton className="h-8 w-48 mb-4" />
           <Skeleton className="h-12 w-64 mb-2" />
@@ -267,7 +292,7 @@ export function FarmerDetail() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl text-foreground mb-2">{farmer.full_name || "Unknown Farmer"}</h1>
-            <p className="text-muted-foreground">Farmer ID: {farmer.farmer_id}</p>
+            <p className="text-muted-foreground">Farmer ID: {farmer.farmer_id || "N/A"}</p>
           </div>
           <div className="flex gap-2">
             <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-muted/50 transition-colors">

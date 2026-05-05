@@ -20,15 +20,33 @@ import { apiRequest } from "@/app/lib/api";
 import { Skeleton } from "@/app/components/ui/skeleton";
 
 interface DashboardSummary {
-  total_farmers?: number;
-  active_farmers?: number;
-  total_batches?: number;
-  active_batches?: number;
-  fraud_alerts?: number;
-  high_priority_fraud?: number;
-  total_payments?: number;
-  pending_payments?: number;
-  total_farms?: number;
+  farmers?: {
+    total: number;
+  };
+  batches?: {
+    delivered: number;
+    pending: number;
+  };
+  farms?: {
+    total: number;
+  };
+  beneficiaries?: {
+    eligible: number;
+  };
+  codes?: {
+    active: number;
+    redeemed: number;
+  };
+  fraud?: {
+    pending_review: number;
+  };
+  payments?: {
+    pending: number;
+    completed: number;
+  };
+  seasons?: {
+    total: number;
+  };
   [key: string]: unknown;
 }
 
@@ -108,17 +126,20 @@ export function Dashboard() {
   const { data: dashboardSummary, isLoading } = useQuery({
     queryKey: ["dashboard", "summary"],
     queryFn: () =>
-      apiRequest<DashboardSummary>("/dashboard/summary", {
+      apiRequest<DashboardSummary>("/web/dashboard/summary", {
         token,
       }),
   });
-  console.log("data is ==>",dashboardSummary)
+  // console.log("data is ==>",dashboardSummary)
 
   const summary = dashboardSummary || {};
-  const totalFarmers = summary.total_farmers ?? 12458;
-  const activeBatches = summary.active_batches ?? 18;
-  const fraudAlerts = summary.fraud_alerts ?? 8;
-  const highPriorityFraud = summary.high_priority_fraud ?? 2;
+  const totalFarmers = summary.farmers?.total ?? 12458;
+  const activeBatches = summary.batches?.pending ?? 18;
+  const fraudAlerts = summary.fraud?.pending_review ?? 8;
+  const highPriorityFraud = summary.fraud?.pending_review ?? 2;
+  const totalFarms = summary.farms?.total ?? 156;
+  const totalPayments = summary.payments?.completed ?? 2456;
+  const pendingPayments = summary.payments?.pending ?? 23;
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-[green]/30">
@@ -183,7 +204,7 @@ export function Dashboard() {
                   {isLoading ? (
                     <Skeleton className="w-40 h-4" />
                   ) : (
-                    "+342 registered this month"
+                    `Across ${totalFarms} farms`
                   )}
                 </div>
               </div>
@@ -215,19 +236,19 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Transport Batches</p>
+                <p className="text-sm text-muted-foreground">Active Batches</p>
                 <div className="text-3xl text-foreground tracking-tight">
                   {isLoading ? (
                     <Skeleton className="w-20 h-8" />
                   ) : (
-                    "127"
+                    activeBatches
                   )}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {isLoading ? (
                     <Skeleton className="w-40 h-4" />
                   ) : (
-                    `${activeBatches} currently in transit`
+                    `${summary.batches?.delivered || 0} delivered`
                   )}
                 </div>
               </div>
@@ -249,7 +270,7 @@ export function Dashboard() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
                 </div>
@@ -258,11 +279,21 @@ export function Dashboard() {
                 </div>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Pending Arrivals</p>
-                <p className="text-3xl text-foreground tracking-tight">43</p>
-                <p className="text-xs text-muted-foreground">
-                  Expected within 24 hours
-                </p>
+                <p className="text-sm text-muted-foreground">Payments</p>
+                <div className="text-3xl text-foreground tracking-tight">
+                  {isLoading ? (
+                    <Skeleton className="w-20 h-8" />
+                  ) : (
+                    totalPayments.toLocaleString()
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {isLoading ? (
+                    <Skeleton className="w-40 h-4" />
+                  ) : (
+                    `${pendingPayments} pending`
+                  )}
+                </div>
               </div>
             </div>
             <div className="h-1 bg-gradient-to-r from-accent/20 to-accent"></div>
