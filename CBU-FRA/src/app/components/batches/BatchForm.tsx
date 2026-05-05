@@ -27,6 +27,7 @@ interface SeasonResponse {
   season_name: string;
 }
 
+//  but why ai....
 interface BatchResponse {
   batch_id: string;
   farmer_id: string;
