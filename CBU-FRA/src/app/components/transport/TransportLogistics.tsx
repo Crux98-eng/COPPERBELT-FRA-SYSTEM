@@ -76,7 +76,7 @@ const getStatusIcon = (status?: string) => {
 };
 
 export function TransportLogistics() {
-  const [selectedFarmers, setSelectedFarmers] = useState<string[]>([]);
+  const [selectedFarmer, setSelectedFarmer] = useState<string>("");
   const [buyingDate, setBuyingDate] = useState<string>("");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationSending, setNotificationSending] = useState(false);
@@ -93,67 +93,86 @@ export function TransportLogistics() {
   const farmers = farmersResponse?.data.farmers ?? [];
 
   const farmersAtShed = farmers;
-
+  // console.log("farmersAtShed", farmersResponse?.data);
+// mobile/farmers/${id}
   const handleFarmerToggle = (farmerId: string) => {
     if (!farmerId) return;
 
-    setSelectedFarmers((prev) =>
-      prev.includes(farmerId)
-        ? prev.filter((id) => id !== farmerId)
-        : [...prev, farmerId],
-    );
+    // Toggle selection
+    setSelectedFarmer((prev) => (prev === farmerId ? "" : farmerId));
   };
-
-  const handleSelectAll = () => {
-    if (farmersAtShed.length === 0) return;
-
-    if (selectedFarmers.length === farmersAtShed.length) {
-      setSelectedFarmers([]);
-      return;
-    }
-
-    setSelectedFarmers(
-      farmersAtShed
-        .map((farmer) => farmer.id)
-        .filter((id): id is string => Boolean(id)),
-    );
-  };
-
+// console.log("selectedFarmer", selectedFarmer);
   const handleSendNotification = async () => {
-    if (selectedFarmers.length === 0 || !buyingDate) {
-      alert("Please select farmers and a buying date");
+    if (!selectedFarmer || !buyingDate) {
+      alert("Please select a farmer and a buying date");
       return;
     }
 
     setNotificationSending(true);
     try {
-      const selectedFarmersData = farmersAtShed.filter((farmer) =>
-        selectedFarmers.includes(farmer.id),
-      );
+      // Fetch individual farmer details to get the most up-to-date phone number
+      const farmerDetails = await apiRequest<any>(`/mobile/farmers/${selectedFarmer}`, {
+        token,
+      });
+      
+      console.log("Farmer details fetched:", farmerDetails);
 
-      const payload = {
-        farmers: selectedFarmersData.map((farmer) => ({
-          farmer_id: farmer.id,
-          farmer_name: farmer.name,
-          phone: farmer.phone,
-          crop: farmer.crop,
-        })),
-        buying_date: buyingDate,
-        message: notificationMessage,
-        message_type: "buying_day_invitation",
+      if (!farmerDetails) {
+        alert("Failed to fetch farmer details");
+        return;
+      }
+
+      // Extract phone number from the detailed response
+      const phoneNumber = farmerDetails.phone_number || farmerDetails.data?.phone_number;
+      
+      if (!phoneNumber) {
+        alert("Farmer has no phone number");
+        return;
+      }
+
+      // Create the message with buying date included
+      const farmerName = farmerDetails.name || farmerDetails.data?.name || "Farmer";
+      const crop = farmerDetails.crop || farmerDetails.data?.crop || "produce";
+      const formattedDate = new Date(buyingDate).toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+      const smsMessage = `Hello ${farmerName}, we invite you to witness the buying of your produce for the buying day on ${formattedDate}. ${notificationMessage || ""} - Food Reserve Agency`;
+
+      // Send SMS via the delivery service
+      const smsPayload = {
+        phone: "0779634025",
+        message: smsMessage
       };
 
-      // console.log("Sending notification payload:", payload);
+      const response = await fetch("https://sms-delivery-gr88.onrender.com/send-sms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(smsPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`SMS delivery failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("SMS sent successfully:", result);
+
       alert(
-        `Notifications sent to ${selectedFarmers.length} farmer(s) for buying day on ${buyingDate}`,
+        `SMS sent to ${farmerName} (${phoneNumber}) for buying day on ${buyingDate}`,
       );
 
-      setSelectedFarmers([]);
+      setSelectedFarmer("");
       setBuyingDate("");
       setNotificationMessage("");
     } catch (error) {
-      console.error("Failed to send notifications:", error);
-      alert("Failed to send notifications");
+      console.error("Failed to send SMS:", error);
+      alert(`Failed to send SMS: ${error.message}`);
     } finally {
       setNotificationSending(false);
     }
@@ -175,16 +194,9 @@ export function TransportLogistics() {
               <h2 className="text-lg text-card-foreground mb-3">
                 Farmers at Shed ({farmersAtShed.length})
               </h2>
-              <button
-                onClick={handleSelectAll}
-                disabled={farmersAtShed.length === 0}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {farmersAtShed.length > 0 &&
-                selectedFarmers.length === farmersAtShed.length
-                  ? "Deselect All"
-                  : "Select All"}
-              </button>
+              <p className="text-sm text-muted-foreground">
+                Select one farmer to send notification
+              </p>
             </div>
 
             <div className="divide-y divide-border max-h-[calc(100vh-350px)] overflow-y-auto">
@@ -196,10 +208,11 @@ export function TransportLogistics() {
                   >
                     <div className="flex items-start gap-3">
                       <input
-                        type="checkbox"
-                        checked={selectedFarmers.includes(farmer.id)}
+                        type="radio"
+                        name="farmer-selection"
+                        checked={selectedFarmer === farmer.id}
                         onChange={() => handleFarmerToggle(farmer.id)}
-                        className="w-5 h-5 mt-0.5 rounded border-2 border-primary cursor-pointer"
+                        className="w-5 h-5 mt-0.5 border-2 border-primary cursor-pointer"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-card-foreground font-medium">
@@ -250,23 +263,16 @@ export function TransportLogistics() {
                     Selected Farmers
                   </h3>
                 </div>
-                {selectedFarmers.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {farmersAtShed
-                      .filter((farmer) => selectedFarmers.includes(farmer.id))
-                      .map((farmer) => (
-                        <div
-                          key={farmer.id}
-                          className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
-                        >
-                          <Check className="w-4 h-4" />
-                          {farmer.name || "Unknown"}
-                        </div>
-                      ))}
+                {selectedFarmer ? (
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                      <Check className="w-4 h-4" />
+                      {farmersAtShed.find((f) => f.id === selectedFarmer)?.name || "Unknown"}
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    No farmers selected yet
+                    No farmer selected yet
                   </p>
                 )}
               </div>
@@ -310,11 +316,8 @@ export function TransportLogistics() {
                 <div className="text-sm text-card-foreground space-y-2">
                   <p>
                     Hello, we invite you to bring your{" "}
-                    {selectedFarmers.length > 0
-                      ? farmersAtShed
-                          .filter((farmer) => selectedFarmers.includes(farmer.id))
-                          .map((farmer) => farmer.crop || "produce")
-                          .join(", ")
+                    {selectedFarmer
+                      ? farmersAtShed.find((f) => f.id === selectedFarmer)?.crop || "produce"
                       : "produce"}{" "}
                     for the buying day on{" "}
                     <span className="font-medium">
@@ -338,7 +341,7 @@ export function TransportLogistics() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-border">
                 <button
                   onClick={() => {
-                    setSelectedFarmers([]);
+                    setSelectedFarmer("");
                     setBuyingDate("");
                     setNotificationMessage("");
                   }}
@@ -350,7 +353,7 @@ export function TransportLogistics() {
                   onClick={handleSendNotification}
                   disabled={
                     notificationSending ||
-                    selectedFarmers.length === 0 ||
+                    !selectedFarmer ||
                     !buyingDate
                   }
                   className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -358,9 +361,7 @@ export function TransportLogistics() {
                   <Bell className="w-5 h-5" />
                   {notificationSending
                     ? "Sending..."
-                    : `Send to ${selectedFarmers.length} Farmer${
-                        selectedFarmers.length !== 1 ? "s" : ""
-                      }`}
+                    : "Send Notification"}
                 </button>
               </div>
             </div>
