@@ -130,6 +130,16 @@ export function Dashboard() {
         token,
       }),
   });
+
+  // User endpoint test
+  const { data: userData, isLoading: userLoading, error: userError } = useQuery({
+    queryKey: ["user", "test"],
+    queryFn: () =>
+      apiRequest<any>("/user", {
+        token,
+      }),
+    enabled: !!token,
+  });
   // console.log("data is ==>",dashboardSummary)
 
   const summary = dashboardSummary || {};
@@ -510,6 +520,51 @@ export function Dashboard() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          </div>
+        </div>
+
+        {/* User Endpoint Test Section */}
+        <div className="mt-8 bg-card border border-border rounded-xl overflow-hidden">
+          <div className="p-6 border-b border-border bg-blue-50 dark:bg-blue-950/20">
+            <h3 className="text-lg text-card-foreground">User Endpoint Test</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Testing /user endpoint response
+            </p>
+          </div>
+          <div className="p-6">
+            {userLoading && (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm text-muted-foreground">Loading user data...</span>
+              </div>
+            )}
+            
+            {userError && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <p className="text-sm text-destructive font-medium">Error fetching user data:</p>
+                <p className="text-xs text-destructive mt-1">{userError.message}</p>
+              </div>
+            )}
+            
+            {userData && (
+              <div className="space-y-4">
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <p className="text-sm text-green-800 dark:text-green-200 font-medium">✓ User endpoint response received</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-card-foreground mb-2">Response Data:</h4>
+                  <pre className="text-xs text-muted-foreground overflow-x-auto bg-background rounded p-3 border">
+                    {JSON.stringify(userData, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            )}
+            
+            {!token && (
+              <div className="bg-muted/50 rounded-lg p-4">
+                <p className="text-sm text-muted-foreground">Please login to test the user endpoint</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

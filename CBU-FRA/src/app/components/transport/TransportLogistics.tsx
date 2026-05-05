@@ -13,28 +13,26 @@ import { useAuth } from "@/app/auth/AuthContext";
 import { apiRequest } from "@/app/lib/api";
 import { Skeleton } from "@/app/components/ui/skeleton";
 
-interface TransportBatch {
+interface Farmer {
   id: string;
-  farmer_id?: string;
-  farmer_name?: string;
-  phone?: string;
+  name: string;
+  nrc: string;
+  location: string;
   crop?: string;
-  declared_bags?: number;
+  phone?: string;
   status?: string;
-  collection_point?: string;
+  bags?: number;
   shed?: string;
-  agent?: string;
-  dispatch_time?: string;
-  arrival_time?: string;
-  gps?: { lat: number; lng: number };
   [key: string]: unknown;
 }
 
-interface BatchesResponse {
-  batches?: TransportBatch[];
-  items?: TransportBatch[];
-  data?: TransportBatch[];
-  [key: string]: unknown;
+interface ApiResponse {
+  status: string;
+  message: string;
+  data: {
+    farmers: Farmer[];
+    total: number;
+  };
 }
 
 const normalizeBatchStatus = (status?: string) =>
@@ -84,24 +82,17 @@ export function TransportLogistics() {
   const [notificationSending, setNotificationSending] = useState(false);
   const { token } = useAuth();
 
-  const { data: batchesResponse, isLoading } = useQuery({
-    queryKey: ["batches", "list"],
+  const { data: farmersResponse, isLoading } = useQuery({
+    queryKey: ["farmers", "list"],
     queryFn: () =>
-      apiRequest<BatchesResponse>("/web/batches", {
+      apiRequest<ApiResponse>("/mobile/farmers", {
         token,
       }),
   });
 
-  const batches = (
-    batchesResponse?.batches ||
-    batchesResponse?.items ||
-    batchesResponse?.data ||
-    []
-  ) as TransportBatch[];
+  const farmers = farmersResponse?.data.farmers ?? [];
 
-  const farmersAtShed = batches.filter(
-    (batch) => normalizeBatchStatus(batch.status) === "arrived",
-  );
+  const farmersAtShed = farmers;
 
   const handleFarmerToggle = (farmerId: string) => {
     if (!farmerId) return;
@@ -123,7 +114,7 @@ export function TransportLogistics() {
 
     setSelectedFarmers(
       farmersAtShed
-        .map((batch) => batch.id)
+        .map((farmer) => farmer.id)
         .filter((id): id is string => Boolean(id)),
     );
   };
@@ -136,23 +127,23 @@ export function TransportLogistics() {
 
     setNotificationSending(true);
     try {
-      const selectedBatches = farmersAtShed.filter((batch) =>
-        selectedFarmers.includes(batch.id),
+      const selectedFarmersData = farmersAtShed.filter((farmer) =>
+        selectedFarmers.includes(farmer.id),
       );
 
       const payload = {
-        farmers: selectedBatches.map((batch) => ({
-          farmer_id: batch.id,
-          farmer_name: batch.farmer_name,
-          phone: batch.phone,
-          crop: batch.crop,
+        farmers: selectedFarmersData.map((farmer) => ({
+          farmer_id: farmer.id,
+          farmer_name: farmer.name,
+          phone: farmer.phone,
+          crop: farmer.crop,
         })),
         buying_date: buyingDate,
         message: notificationMessage,
         message_type: "buying_day_invitation",
       };
 
-      console.log("Sending notification payload:", payload);
+      // console.log("Sending notification payload:", payload);
       alert(
         `Notifications sent to ${selectedFarmers.length} farmer(s) for buying day on ${buyingDate}`,
       );
@@ -198,33 +189,33 @@ export function TransportLogistics() {
 
             <div className="divide-y divide-border max-h-[calc(100vh-350px)] overflow-y-auto">
               {farmersAtShed.length > 0 ? (
-                farmersAtShed.map((batch) => (
+                farmersAtShed.map((farmer) => (
                   <div
-                    key={batch.id}
+                    key={farmer.id}
                     className="p-4 hover:bg-muted/30 transition-colors"
                   >
                     <div className="flex items-start gap-3">
                       <input
                         type="checkbox"
-                        checked={selectedFarmers.includes(batch.id)}
-                        onChange={() => handleFarmerToggle(batch.id)}
+                        checked={selectedFarmers.includes(farmer.id)}
+                        onChange={() => handleFarmerToggle(farmer.id)}
                         className="w-5 h-5 mt-0.5 rounded border-2 border-primary cursor-pointer"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-card-foreground font-medium">
-                          {batch.farmer_name || "Unknown"}
+                          {farmer.name || "Unknown"}
                         </p>
                         <p className="text-xs text-muted-foreground mb-1">
-                          {batch.id}
+                          {farmer.phone || "No phone"}
                         </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <Package className="w-3 h-3" />
-                          <span>{batch.crop || "N/A"}</span>
+                          <span>{farmer.crop || "N/A"}</span>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1 px-2 py-1 bg-secondary/20 text-secondary rounded mt-2">
                             <CheckCircle className="w-3 h-3" />
-                            {batch.declared_bags || 0} bags
+                            {farmer.bags || 0} bags
                           </span>
                         </div>
                       </div>
@@ -262,14 +253,14 @@ export function TransportLogistics() {
                 {selectedFarmers.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
                     {farmersAtShed
-                      .filter((batch) => selectedFarmers.includes(batch.id))
-                      .map((batch) => (
+                      .filter((farmer) => selectedFarmers.includes(farmer.id))
+                      .map((farmer) => (
                         <div
-                          key={batch.id}
+                          key={farmer.id}
                           className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
                         >
                           <Check className="w-4 h-4" />
-                          {batch.farmer_name || "Unknown"}
+                          {farmer.name || "Unknown"}
                         </div>
                       ))}
                   </div>
@@ -321,8 +312,8 @@ export function TransportLogistics() {
                     Hello, we invite you to bring your{" "}
                     {selectedFarmers.length > 0
                       ? farmersAtShed
-                          .filter((batch) => selectedFarmers.includes(batch.id))
-                          .map((batch) => batch.crop || "produce")
+                          .filter((farmer) => selectedFarmers.includes(farmer.id))
+                          .map((farmer) => farmer.crop || "produce")
                           .join(", ")
                       : "produce"}{" "}
                     for the buying day on{" "}
@@ -392,44 +383,44 @@ export function TransportLogistics() {
                   <Skeleton className="h-3 w-3/4" />
                 </div>
               ))
-            ) : batches.length > 0 ? (
-              batches.map((batch) => {
-                const status = normalizeBatchStatus(batch.status);
+            ) : farmers.length > 0 ? (
+              farmers.map((farmer) => {
+                const status = normalizeBatchStatus(farmer.status);
                 const isArrived = status === "arrived";
 
                 return (
                   <div
-                    key={batch.id}
+                    key={farmer.id}
                     className={`p-4 ${isArrived ? "bg-secondary/5" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div>
                         <p className="text-sm text-card-foreground font-medium">
-                          {batch.id} - {batch.farmer_name || "Unknown Farmer"}
+                          {farmer.id} - {farmer.name || "Unknown Farmer"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {batch.crop || "N/A"} - {batch.declared_bags || 0} bags
+                          {farmer.crop || "N/A"} - {farmer.bags || 0} bags
                         </p>
                       </div>
                       <span
                         className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs ${getStatusClassName(
-                          batch.status,
+                          farmer.status,
                         )}`}
                       >
-                        {getStatusIcon(batch.status)}
-                        {getStatusLabel(batch.status)}
+                        {getStatusIcon(farmer.status)}
+                        {getStatusLabel(farmer.status)}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {batch.shed || "No shed assigned"} - Agent:{" "}
-                      {batch.agent || "Unassigned"}
+                      {farmer.phone || "No phone"} - Shed:{" "}
+                      {farmer.shed || "No shed assigned"}
                     </p>
                   </div>
                 );
               })
             ) : (
               <div className="p-4 text-center text-sm text-muted-foreground">
-                No transport batches found
+                No farmers found
               </div>
             )}
           </div>
