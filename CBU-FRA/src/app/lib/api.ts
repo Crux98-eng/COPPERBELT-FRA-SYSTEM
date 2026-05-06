@@ -1,13 +1,13 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  (import.meta.env.DEV ? "/api" : "https://fra-backend-vh1s.onrender.com/api");
+  "https://fra-backend-vh1s.onrender.com/api";
 
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   token?: string | null;
   isFormData?: boolean;
 };
-
+console.log("base url is ==",API_BASE_URL);
 export class ApiError extends Error {
   status: number;
   data: unknown;

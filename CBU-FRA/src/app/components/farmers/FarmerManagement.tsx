@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Search, Filter, CheckCircle, Trash2 } from "lucide-react";
+import { Search, Filter, CheckCircle, Trash2, Download } from "lucide-react";
 import {
   useMutation,
   useQuery,
@@ -10,6 +10,8 @@ import {
 import { useAuth } from "@/app/auth/AuthContext";
 import { ApiError, apiRequest } from "@/app/lib/api";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 /* =========================
    TYPES (MATCH API)
@@ -126,6 +128,60 @@ export function FarmerManagement() {
     if (!window.confirm(`Delete farmer "${name}"?`)) return;
     deleteFarmerMutation.mutate(id);
   }
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text("FRA Farmer Management Report", 14, 20);
+    
+    // Add timestamp
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+    
+    // Add summary
+    doc.setFontSize(14);
+    doc.text("Summary", 14, 45);
+    doc.setFontSize(10);
+    doc.text(`Total Farmers: ${total}`, 14, 55);
+    doc.text(`Current Page: ${page} of ${totalPages}`, 14, 62);
+    doc.text(`Filters Applied: ${searchTerm ? `Search: ${searchTerm}` : 'None'}${districtFilter ? `, District: ${districtFilter}` : ''}`, 14, 69);
+    
+    // Farmers table
+    doc.setFontSize(14);
+    doc.text("Farmers List", 14, 85);
+    
+    const farmerData = [
+      ["ID", "Name", "NRC", "Location", "Crop"],
+      ...farmers.map(f => [
+        f.id.slice(-8),
+        f.name,
+        f.nrc,
+        f.location,
+        f.crop || "N/A"
+      ])
+    ];
+    
+    autoTable(doc, {
+      head: [farmerData[0]],
+      body: farmerData.slice(1),
+      startY: 95,
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185] },
+      columnStyles: {
+        0: { cellWidth: 25 }, // ID
+        1: { cellWidth: 50 }, // Name
+        2: { cellWidth: 30 }, // NRC
+        3: { cellWidth: 40 }, // Location
+        4: { cellWidth: 30 }, // Crop
+      },
+    });
+    
+    // Save PDF
+    doc.save(`FRA_Farmers_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   /* =========================
      UI

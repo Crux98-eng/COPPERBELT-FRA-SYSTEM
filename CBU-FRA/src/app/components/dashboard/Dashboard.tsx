@@ -1,4 +1,4 @@
-import { ArrowUpRight, ArrowDownRight, Activity } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Activity, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -18,6 +18,8 @@ import FarmMap from "./mapPlot";
 import { useAuth } from "@/app/auth/AuthContext";
 import { apiRequest } from "@/app/lib/api";
 import { Skeleton } from "@/app/components/ui/skeleton";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface DashboardSummary {
   farmers?: {
@@ -150,6 +152,90 @@ export function Dashboard() {
   const totalFarms = summary.farms?.total ?? 156;
   const totalPayments = summary.payments?.completed ?? 2456;
   const pendingPayments = summary.payments?.pending ?? 23;
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text("FRA Operations Dashboard Report", 14, 20);
+    
+    // Add timestamp
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+    
+    // Summary Statistics
+    doc.setFontSize(14);
+    doc.text("Summary Statistics", 14, 45);
+    
+    const summaryData = [
+      ["Metric", "Value"],
+      ["Total Farmers", totalFarmers.toString()],
+      ["Active Batches", activeBatches.toString()],
+      ["Fraud Alerts", fraudAlerts.toString()],
+      ["Total Farms", totalFarms.toString()],
+      ["Completed Payments", totalPayments.toString()],
+      ["Pending Payments", pendingPayments.toString()],
+    ];
+    
+    let finalY = 55;
+    autoTable(doc, {
+      head: [summaryData[0]],
+      body: summaryData.slice(1),
+      startY: finalY,
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185] },
+      didDrawPage: (data) => {
+        finalY = data.cursor.y;
+      },
+    });
+    
+    // Farmers by Region
+    doc.setFontSize(14);
+    doc.text("Farmers by Region", 14, finalY + 20);
+    
+    const regionData = [
+      ["Region", "Farmers", "Growth %"],
+      ...farmersByRegion.map(r => [r.region, r.farmers.toString(), `${r.growth}%`])
+    ];
+    
+    finalY += 30;
+    autoTable(doc, {
+      head: [regionData[0]],
+      body: regionData.slice(1),
+      startY: finalY,
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185] },
+      didDrawPage: (data) => {
+        finalY = data.cursor.y;
+      },
+    });
+    
+    // Crop Distribution
+    doc.setFontSize(14);
+    doc.text("Crop Distribution", 14, finalY + 20);
+    
+    const cropData = [
+      ["Crop", "Farmers"],
+      ...cropDistribution.map(c => [c.name, c.value.toString()])
+    ];
+    
+    finalY += 30;
+    autoTable(doc, {
+      head: [cropData[0]],
+      body: cropData.slice(1),
+      startY: finalY,
+      theme: 'grid',
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [41, 128, 185] },
+    });
+    
+    // Save the PDF
+    doc.save(`FRA_Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b border-border bg-[green]/30">
@@ -164,6 +250,13 @@ export function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={exportToPDF}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 text-sm"
+              >
+                <Download className="w-4 h-4" />
+                Export PDF
+              </button>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Last updated</p>
                 <p className="text-sm text-foreground">
