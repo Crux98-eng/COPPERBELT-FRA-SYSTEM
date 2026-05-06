@@ -197,6 +197,13 @@ export function FarmerManagement() {
             Manage registered farmers.
           </p>
         </div>
+        <button
+          onClick={exportToPDF}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          Export to PDF
+        </button>
       </div>
 
       <div className="bg-card border rounded-lg shadow-sm">

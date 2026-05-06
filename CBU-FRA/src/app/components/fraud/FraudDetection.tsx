@@ -8,9 +8,12 @@ import {
   MapPin,
   Scale,
   Users,
+  Download,
 } from "lucide-react";
 import { useAuth } from "@/app/auth/AuthContext";
 import { apiRequest } from "@/app/lib/api";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface FarmerSummary {
   farmer_id: string;
@@ -238,13 +241,79 @@ export function FraudDetection() {
     });
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+
+    // Add title
+    doc.setFontSize(20);
+    doc.text("FRA Fraud Detection Report", 14, 20);
+
+    // Add timestamp
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
+
+    // Add summary
+    doc.setFontSize(14);
+    doc.text("Summary", 14, 45);
+    doc.setFontSize(10);
+    doc.text(`Total Pending Reviews: ${queueEntries.length}`, 14, 55);
+    doc.text(`High Priority: ${queueEntries.filter((entry) => entry.priority >= 2).length}`, 14, 62);
+    doc.text(`Normal Priority: ${queueEntries.filter((entry) => entry.priority === 1).length}`, 14, 69);
+    doc.text(`Low Priority: ${queueEntries.filter((entry) => entry.priority === 0).length}`, 14, 76);
+
+    // Fraud queue table
+    doc.setFontSize(14);
+    doc.text("Fraud Review Queue", 14, 92);
+
+    const fraudData = [
+      ["Farmer Name", "NRC", "District", "Priority", "Status", "Created Date"],
+      ...queueEntries.map((entry) => [
+        entry.farmer.full_name,
+        entry.farmer.nrc_number,
+        entry.farmer.district,
+        entry.priority >= 2 ? "High" : entry.priority === 1 ? "Normal" : "Low",
+        entry.status,
+        new Date(entry.created_at).toLocaleDateString(),
+      ]),
+    ];
+
+    autoTable(doc, {
+      head: [fraudData[0]],
+      body: fraudData.slice(1),
+      startY: 102,
+      theme: "grid",
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [220, 38, 38] },
+      columnStyles: {
+        0: { cellWidth: 40 }, // Farmer Name
+        1: { cellWidth: 30 }, // NRC
+        2: { cellWidth: 35 }, // District
+        3: { cellWidth: 25 }, // Priority
+        4: { cellWidth: 25 }, // Status
+        5: { cellWidth: 35 }, // Created Date
+      },
+    });
+
+    // Save PDF
+    doc.save(`FRA_Fraud_Report_${new Date().toISOString().split("T")[0]}.pdf`);
+  };
+
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl text-foreground mb-2">Fraud Detection</h1>
-        <p className="text-muted-foreground">
-          Monitor and investigate suspicious activities.
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl text-foreground mb-2">Fraud Detection</h1>
+          <p className="text-muted-foreground">
+            Monitor and investigate suspicious activities.
+          </p>
+        </div>
+        <button
+          onClick={exportToPDF}
+          className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:bg-destructive/90 transition-colors"
+        >
+          <Download className="w-5 h-5" />
+          Export to PDF
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
