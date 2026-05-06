@@ -86,6 +86,36 @@ interface FarmerApiDeleteResponse {
   
 }
 
+// Mock GPS coordinate generator with randomized farm shapes
+const generateMockFarmCoordinates = (farmId: string) => {
+  // Generate random center point around Zambia region
+  const baseLat = -13.5 + (Math.random() - 0.5) * 2; // Around Zambia latitude
+  const baseLng = 27.5 + (Math.random() - 0.5) * 2; // Around Zambia longitude
+  
+  // Generate random farm shape (polygon with 4-8 points)
+  const numPoints = Math.floor(Math.random() * 5) + 4; // 4-8 points
+  const coordinates = [];
+  
+  for (let i = 0; i < numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    const radius = 0.001 + Math.random() * 0.003; // Small farm area (100-400m radius)
+    
+    const lat = baseLat + radius * Math.cos(angle);
+    const lng = baseLng + radius * Math.sin(angle);
+    
+    coordinates.push({ lat, lng });
+  }
+  
+  // Close the polygon by adding the first point at the end
+  coordinates.push(coordinates[0]);
+  
+  return {
+    farm_boundary_coordinates: coordinates,
+    hectorage: (Math.random() * 10 + 1).toFixed(2), // 1-11 hectares
+    gps_coordinates: `${baseLat.toFixed(6)}, ${baseLng.toFixed(6)}`
+  };
+};
+
 export function FarmerDetail() {
   const { id } = useParams();
   const { token } = useAuth();
@@ -192,7 +222,20 @@ export function FarmerDetail() {
   // console.log("data length==",farmer?.data?.length)
   // console.log(farmer?.data?.[0]?.phone_number);
   const farms = farmsQuery.data?.data || [];
-  const primaryFarm = farms[0]; // Use first farm as primary
+  const primaryFarm = farms[0] ? {
+    ...farms[0],
+    ...generateMockFarmCoordinates(farms[0].id || id || 'mock-farm')
+  } : {
+    // Create a mock farm if no real farm data exists
+    ...generateMockFarmCoordinates(id || 'mock-farm'),
+    id: id || 'mock-farm',
+    crop: 'Maize',
+    status: 'active'
+  }; // Use first farm as primary with mock GPS data
+  
+  // Debug logging
+  console.log('PrimaryFarm data:', primaryFarm);
+  console.log('Farm boundary coordinates:', primaryFarm?.farm_boundary_coordinates);
 
   const isLoading = farmerQuery.isLoading || farmsQuery.isLoading;
   const isError = farmerQuery.isError || farmsQuery.isError;
@@ -518,18 +561,18 @@ export function FarmerDetail() {
               {primaryFarm?.farm_boundary_coordinates ? (
                 <>
                   <FarmMap coordinates={primaryFarm.farm_boundary_coordinates} />
-                  <span className="text-sm text-muted-foreground mt-2 block">
-                    Hectorage: {primaryFarm.hectorage || "N/A"}
-                  </span>
+                  <div className="mt-3 space-y-1">
+                    <span className="text-sm text-muted-foreground block">
+                      Hectorage: {primaryFarm.hectorage || "N/A"} hectares
+                    </span>
+                    <span className="text-sm text-muted-foreground block">
+                      GPS Center: {primaryFarm.gps_coordinates || "N/A"}
+                    </span>
+                  </div>
                 </>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground">No GPS data available</p>
-                  {primaryFarm?.gps_coordinates && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {primaryFarm.gps_coordinates}
-                    </p>
-                  )}
+                  <p className="text-muted-foreground">Loading GPS data...</p>
                 </div>
               )}
             </div>
