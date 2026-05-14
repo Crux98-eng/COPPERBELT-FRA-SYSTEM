@@ -83,8 +83,8 @@ export function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
               <Warehouse className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h1 className="text-3xl text-card-foreground mb-2">FRA System</h1>
-            <p className="text-muted-foreground">Food Reserve Agency - Zambia</p>
+            <h1 className="text-3xl text-card-foreground mb-2">Farmers Market</h1>
+            <p className="text-muted-foreground">The reliable and secure farming platform</p>
           </div> 
           
          
@@ -220,7 +220,7 @@ export function LoginPage() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          © 2026 Food Reserve Agency, Republic of Zambia
+          © avern 2026
         </p>
       </div>
     </div>

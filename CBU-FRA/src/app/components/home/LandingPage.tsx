@@ -55,7 +55,7 @@ export function LandingPage() {
               <img src={logo} alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
-              <h1 className="text-xl text-white">FRA System</h1>
+              <h1 className="text-xl text-white">Farners Market</h1>
               <p className="text-xs text-white/80">Republic of Zambia</p>
             </div>
           </div>
@@ -72,7 +72,7 @@ export function LandingPage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-white text-sm mb-6">
               <Shield className="w-4 h-4" />
-              <span>Ministry of Agriculture - Zambia</span>
+              <span>Secure & Transparent</span>
             </div>
 
             <h1 className="text-5xl md:text-7xl text-white mb-6 leading-tight">

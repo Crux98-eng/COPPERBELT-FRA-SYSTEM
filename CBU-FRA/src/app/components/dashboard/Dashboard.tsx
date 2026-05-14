@@ -163,7 +163,7 @@ export function Dashboard() {
     // Add timestamp
     doc.setFontSize(10);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
-    
+  
     // Summary Statistics
     doc.setFontSize(14);
     doc.text("Summary Statistics", 14, 45);
@@ -246,7 +246,7 @@ export function Dashboard() {
                 Operations Dashboard
               </h1>
               <p className="text-muted-foreground">
-                Real-time overview of FRA agricultural operations
+                Real-time overview of the system management
               </p>
             </div>
             <div className="flex items-center gap-3">

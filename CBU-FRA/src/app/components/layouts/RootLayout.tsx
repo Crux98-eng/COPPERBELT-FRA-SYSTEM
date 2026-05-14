@@ -47,7 +47,7 @@ export function RootLayout() {
             <img src={logo} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <p className="mt-5 text-[9px] tracking-[0.28em] uppercase text-sidebar-foreground/60">
-            COPPERBELT FRA
+            The farmers market
           </p>
           <h1 className="mt-1 text-s font-semibold leading-tight text-sidebar-foreground">
             Admin Console
